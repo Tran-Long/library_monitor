@@ -145,8 +145,8 @@ function DraggableBookshelfCard({ bookshelf, bookCount, onEdit, onDelete, onSele
         {/* Content Area - Clickable */}
         <div className="flex-1 cursor-pointer" onClick={onSelect}>
           <div className="flex items-center gap-3 mb-2">
-            <span className="bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full">� {bookCount}</span>
-            <h3 className="text-lg font-semibold text-gray-800">�️ {bookshelf.name}</h3>
+            <span className="bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full">🗂️ {bookCount}</span>
+            <h3 className="text-lg font-semibold text-gray-800">📚 {bookshelf.name}</h3>
           </div>
           {bookshelf.short_description && (
             <p className="text-gray-600 text-sm mt-1">{bookshelf.short_description}</p>
@@ -1978,6 +1978,205 @@ export default function App() {
             </DndContext>
           )}
         </main>
+
+        {/* Detail Popup Modal for Libraries View */}
+        {detailPopup && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {detailPopup.type === 'library' && '🏛️ Library Details'}
+                  {detailPopup.type === 'bookshelf' && '🗂️ Bookshelf Details'}
+                  {detailPopup.type === 'shelf' && '📍 Shelf Details'}
+                  {detailPopup.type === 'book' && '📚 Book Details'}
+                </h2>
+                <button
+                  onClick={() => setDetailPopup(null)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-gray-700">Name</h3>
+                  <p className="text-gray-600 mt-1">
+                    {detailPopup.type === 'library' && (detailPopup.data as Library).name}
+                    {detailPopup.type === 'bookshelf' && (detailPopup.data as Bookshelf).name}
+                    {detailPopup.type === 'shelf' && ((detailPopup.data as Shelf).name || '(No name)')}
+                    {detailPopup.type === 'book' && (detailPopup.data as Book).title}
+                  </p>
+                </div>
+                {detailPopup.type === 'library' && (
+                  <>
+                    {(detailPopup.data as Library).address && (
+                      <div>
+                        <h3 className="font-semibold text-gray-700">Address</h3>
+                        <p className="text-gray-600 mt-1">{(detailPopup.data as Library).address}</p>
+                      </div>
+                    )}
+                    {(detailPopup.data as Library).phone && (
+                      <div>
+                        <h3 className="font-semibold text-gray-700">Phone</h3>
+                        <p className="text-gray-600 mt-1">{(detailPopup.data as Library).phone}</p>
+                      </div>
+                    )}
+                    {(detailPopup.data as Library).email && (
+                      <div>
+                        <h3 className="font-semibold text-gray-700">Email</h3>
+                        <p className="text-gray-600 mt-1">{(detailPopup.data as Library).email}</p>
+                      </div>
+                    )}
+                  </>
+                )}
+                {detailPopup.type === 'book' && (
+                  <>
+                    {((detailPopup.data as Book).author || (detailPopup.data as Book).year) && (
+                      <div>
+                        <h3 className="font-semibold text-gray-700">Author & Year</h3>
+                        <p className="text-gray-600 mt-1">
+                          {(detailPopup.data as Book).author && <span>{(detailPopup.data as Book).author}</span>}
+                          {(detailPopup.data as Book).year && <span> ({(detailPopup.data as Book).year})</span>}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+                <div>
+                  <h3 className="font-semibold text-gray-700">Short Description</h3>
+                  <p className="text-gray-600 mt-1">
+                    {detailPopup.type === 'library' && ((detailPopup.data as Library).short_description || '(None)')}
+                    {detailPopup.type === 'bookshelf' && ((detailPopup.data as Bookshelf).short_description || '(None)')}
+                    {detailPopup.type === 'shelf' && ((detailPopup.data as Shelf).short_description || '(None)')}
+                    {detailPopup.type === 'book' && ((detailPopup.data as Book).short_description || '(None)')}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-700">Long Description</h3>
+                  <p className="text-gray-600 mt-1 whitespace-pre-wrap">
+                    {detailPopup.type === 'library' && ((detailPopup.data as Library).long_description || '(None)')}
+                    {detailPopup.type === 'bookshelf' && ((detailPopup.data as Bookshelf).long_description || '(None)')}
+                    {detailPopup.type === 'shelf' && ((detailPopup.data as Shelf).long_description || '(None)')}
+                    {detailPopup.type === 'book' && ((detailPopup.data as Book).long_description || '(None)')}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-4 mt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setDetailPopup(null)}
+                  className="w-full px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Create/Edit Library Modal */}
+        {showCreateLibraryModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {editingLibrary ? 'Edit Library' : 'Create New Library'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowCreateLibraryModal(false)
+                    setEditingLibrary(null)
+                  }}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={editingLibrary ? handleUpdateLibrary : handleCreateLibrary} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Library Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={libraryFormData.name}
+                    onChange={(e) => setLibraryFormData({ ...libraryFormData, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="e.g., Central Library"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                  <input
+                    type="text"
+                    value={libraryFormData.short_description}
+                    onChange={(e) => setLibraryFormData({ ...libraryFormData, short_description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Brief description (shown on card)"
+                    maxLength={255}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Long Description</label>
+                  <textarea
+                    value={libraryFormData.long_description}
+                    onChange={(e) => setLibraryFormData({ ...libraryFormData, long_description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Detailed description (shown in detail popup)"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                  <input
+                    type="text"
+                    value={libraryFormData.address}
+                    onChange={(e) => setLibraryFormData({ ...libraryFormData, address: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Street address"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={libraryFormData.phone}
+                    onChange={(e) => setLibraryFormData({ ...libraryFormData, phone: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="+1 234 567 8900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={libraryFormData.email}
+                    onChange={(e) => setLibraryFormData({ ...libraryFormData, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="library@example.com"
+                  />
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateLibraryModal(false)
+                      setEditingLibrary(null)
+                    }}
+                    className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition"
+                  >
+                    {isSubmitting ? 'Saving...' : editingLibrary ? 'Update' : 'Create'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     )
   }

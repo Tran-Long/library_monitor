@@ -308,6 +308,7 @@ export default function App() {
   const [editingLibrary, setEditingLibrary] = useState<Library | null>(null)
   const [editingBookshelf, setEditingBookshelf] = useState<Bookshelf | null>(null)
   const [editingShelf, setEditingShelf] = useState<Shelf | null>(null)
+  const [editingBook, setEditingBook] = useState<Book | null>(null)
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [detailPopup, setDetailPopup] = useState<{ type: 'library' | 'bookshelf' | 'shelf' | 'book'; data: Library | Bookshelf | Shelf | Book } | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -724,9 +725,49 @@ export default function App() {
       
       await loadAllBooks()
       await loadStorageBooks()
-      if (selectedShelfForBook) await loadBooks(selectedShelfForBook.id)
     } catch (err) {
       setError(`Failed to create book: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleUpdateBook = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingBook) return
+    setIsSubmitting(true)
+    try {
+      if (!bookFormData.title.trim()) {
+        setError('Title is required')
+        setIsSubmitting(false)
+        return
+      }
+
+      const payload = {
+        title: bookFormData.title,
+        author: bookFormData.author || undefined,
+        year: bookFormData.year ? parseInt(bookFormData.year) : undefined,
+        short_description: bookFormData.short_description || undefined,
+        long_description: bookFormData.long_description || undefined
+      }
+
+      const response = await fetch(`/api/books/${editingBook.id}/`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      if (!response.ok) throw new Error(`API error: ${response.status}`)
+
+      setBookFormData({ title: '', author: '', year: '', short_description: '', long_description: '', targetShelf: '' })
+      setEditingBook(null)
+      setShowCreateBookModal(false)
+
+      await loadAllBooks()
+      await loadStorageBooks()
+      setError(null)
+    } catch (err) {
+      setError(`Failed to update book: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -2279,7 +2320,7 @@ export default function App() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDeleteBook(book.id)}
+                            onClick={() => handleDeleteBook(book.id, book.shelf_id || null)}
                             className="flex-1 text-sm px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded transition"
                           >
                             Delete
@@ -2322,7 +2363,7 @@ export default function App() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDeleteBook(book.id)}
+                            onClick={() => handleDeleteBook(book.id, book.shelf_id || null)}
                             className="flex-1 text-sm px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded transition"
                           >
                             Delete
@@ -2365,7 +2406,7 @@ export default function App() {
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDeleteBook(book.id)}
+                            onClick={() => handleDeleteBook(book.id, book.shelf_id || null)}
                             className="flex-1 text-sm px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded transition"
                           >
                             Delete
@@ -2379,6 +2420,197 @@ export default function App() {
             </div>
           )}
         </main>
+
+        {/* Create/Edit Book Modal */}
+        {showCreateBookModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 top-0 left-0 right-0 bottom-0" onClick={() => setShowCreateBookModal(false)}>
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">{editingBook ? 'Edit Book' : 'Add New Book'}</h2>
+                <button onClick={() => { setShowCreateBookModal(false); setEditingBook(null) }} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+              </div>
+              
+              <form onSubmit={editingBook ? handleUpdateBook : handleCreateBook} className="space-y-4">
+                {/* Book Details */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                  <input
+                    type="text"
+                    required
+                    value={bookFormData.title}
+                    onChange={(e) => setBookFormData({ ...bookFormData, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Book title"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+                  <input
+                    type="text"
+                    value={bookFormData.author}
+                    onChange={(e) => setBookFormData({ ...bookFormData, author: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Author name"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                  <input
+                    type="text"
+                    value={bookFormData.year}
+                    onChange={(e) => setBookFormData({ ...bookFormData, year: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Publication year"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                  <input
+                    type="text"
+                    value={bookFormData.short_description}
+                    onChange={(e) => setBookFormData({ ...bookFormData, short_description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Brief description"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Long Description</label>
+                  <textarea
+                    value={bookFormData.long_description}
+                    onChange={(e) => setBookFormData({ ...bookFormData, long_description: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Detailed description"
+                    rows={3}
+                  />
+                </div>
+                
+                {!editingBook && (
+                  <>
+                    {/* Placement Options */}
+                    <div className="border-t border-gray-200 pt-4 mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Where to place this book?</label>
+                      <div className="space-y-2">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="placement"
+                            value="storage"
+                            checked={placementType === 'storage'}
+                            onChange={(e) => setPlacementType(e.target.value as 'storage' | 'shelf')}
+                            className="mr-2"
+                          />
+                          <span className="text-sm text-gray-700">Storage</span>
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="placement"
+                            value="shelf"
+                            checked={placementType === 'shelf'}
+                            onChange={(e) => setPlacementType(e.target.value as 'storage' | 'shelf')}
+                            className="mr-2"
+                          />
+                          <span className="text-sm text-gray-700">Library Shelf</span>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {placementType === 'shelf' && (
+                      <div className="space-y-3 bg-gray-50 p-3 rounded">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Library *</label>
+                          <select
+                            value={selectedLibraryForBook}
+                            onChange={(e) => {
+                              setSelectedLibraryForBook(e.target.value)
+                              setSelectedBookshelfForBook('')
+                              setSelectedShelfIdForBook('')
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">-- Select a library --</option>
+                            {libraries.map((lib) => (
+                              <option key={lib.id} value={lib.id}>{lib.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        
+                        {selectedLibraryForBook && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Bookshelf *</label>
+                            <select
+                              value={selectedBookshelfForBook}
+                              onChange={(e) => {
+                                setSelectedBookshelfForBook(e.target.value)
+                                setSelectedShelfIdForBook('')
+                              }}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">-- Select a bookshelf --</option>
+                              {allBookshelves
+                                .filter((bs) => bs.library_id === parseInt(selectedLibraryForBook))
+                                .map((bs) => (
+                                  <option key={bs.id} value={bs.id}>{bs.name}</option>
+                                ))}
+                            </select>
+                          </div>
+                        )}
+                        
+                        {selectedBookshelfForBook && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Shelf *</label>
+                            <select
+                              value={selectedShelfIdForBook}
+                              onChange={(e) => setSelectedShelfIdForBook(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">-- Select a shelf --</option>
+                              {allShelves
+                                .filter((s) => s.bookshelf_id === parseInt(selectedBookshelfForBook))
+                                .map((s) => (
+                                  <option key={s.id} value={s.id}>#{s.order}{s.name ? `: ${s.name}` : ''}</option>
+                                ))}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {/* Form Actions */}
+                <div className="flex gap-2 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCreateBookModal(false)
+                      setEditingBook(null)
+                      setBookFormData({ title: '', author: '', year: '', short_description: '', long_description: '' })
+                      setPlacementType('storage')
+                      setSelectedLibraryForBook('')
+                      setSelectedBookshelfForBook('')
+                      setSelectedShelfIdForBook('')
+                    }}
+                    className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition"
+                  >
+                    {isSubmitting ? 'Saving...' : editingBook ? 'Update Book' : 'Create Book'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     )
   }

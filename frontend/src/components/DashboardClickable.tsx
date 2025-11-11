@@ -36,7 +36,7 @@ export default function DashboardClickable({
     children,
   }: {
     title: string
-    icon: string
+    icon?: string
     color: string
     onClick: () => void
     children: React.ReactNode
@@ -45,9 +45,9 @@ export default function DashboardClickable({
       onClick={onClick}
       className={`${color} rounded-lg shadow-md p-6 text-white hover:shadow-lg hover:scale-105 transition transform cursor-pointer text-left`}
     >
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-start justify-between gap-4 mb-4">
         <h3 className="text-2xl font-bold">{title}</h3>
-        <span className="text-4xl">{icon}</span>
+        {icon && <span className="text-3xl flex-shrink-0">{icon}</span>}
       </div>
       {children}
       <p className="text-sm opacity-90 mt-4">Click to view</p>
@@ -59,23 +59,28 @@ export default function DashboardClickable({
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Storage Card */}
-        <StatCard
-          title="Storage"
-          icon="📦"
-          color="bg-blue-600 hover:bg-blue-700"
+        <button
           onClick={onStorageClick}
+          className="bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md p-6 text-white hover:shadow-lg hover:scale-105 transition transform cursor-pointer text-left"
         >
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <h3 className="text-2xl font-bold">Storage</h3>
+            <img src="/box.png" alt="Storage" className="w-12 h-12 flex-shrink-0" />
+          </div>
           <div className="text-5xl font-bold mb-2">{storageBooks.length}</div>
           <p className="text-sm opacity-90">books in storage</p>
-        </StatCard>
+          <p className="text-sm opacity-90 mt-4">Click to view</p>
+        </button>
 
         {/* Library Card */}
-        <StatCard
-          title="Library"
-          icon="📚"
-          color="bg-green-600 hover:bg-green-700"
+        <button
           onClick={onLibraryClick}
+          className="bg-green-600 hover:bg-green-700 rounded-lg shadow-md p-6 text-white hover:shadow-lg hover:scale-105 transition transform cursor-pointer text-left"
         >
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <h3 className="text-2xl font-bold">Library</h3>
+            <img src="/library.png" alt="Library" className="w-12 h-12 flex-shrink-0" />
+          </div>
           <div className="space-y-2">
             <div>
               <p className="text-sm opacity-90">Libraries</p>
@@ -86,18 +91,22 @@ export default function DashboardClickable({
               <div className="text-3xl font-bold">{libraryBooks.length}</div>
             </div>
           </div>
-        </StatCard>
+          <p className="text-sm opacity-90 mt-4">Click to view</p>
+        </button>
 
         {/* Borrowed Card */}
-        <StatCard
-          title="Borrowed"
-          icon="✨"
-          color="bg-purple-600 hover:bg-purple-700"
+        <button
           onClick={onBorrowedClick}
+          className="bg-purple-600 hover:bg-purple-700 rounded-lg shadow-md p-6 text-white hover:shadow-lg hover:scale-105 transition transform cursor-pointer text-left"
         >
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <h3 className="text-2xl font-bold">Borrowed</h3>
+            <img src="/borrow.png" alt="Borrowed" className="w-12 h-12 flex-shrink-0" />
+          </div>
           <div className="text-5xl font-bold mb-2">{borrowedBooks.length}</div>
           <p className="text-sm opacity-90">books borrowed</p>
-        </StatCard>
+          <p className="text-sm opacity-90 mt-4">Click to view</p>
+        </button>
       </div>
 
       {/* Manage Books and Manage Users Buttons */}

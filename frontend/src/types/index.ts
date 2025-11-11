@@ -52,6 +52,9 @@ export interface Book {
   status?: 'storage' | 'library' | 'borrowed'
   created_at: string
   updated_at: string
+  borrowed_by_user_id?: number | null
+  borrowed_by_user_name?: string
+  borrow_date?: string | null
 }
 
 export interface User {

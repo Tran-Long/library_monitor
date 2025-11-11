@@ -52,7 +52,10 @@ function DraggableLibraryCard({ library, bookCount, onSelect, onEdit, onDelete, 
         >
           <div className="flex items-center gap-3 mb-2">
             <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full">📚 {bookCount}</span>
-            <h3 className="text-xl font-semibold text-gray-800">🏛️ {library.name}</h3>
+            <div className="flex items-center gap-2">
+              <img src="/library.png" alt="Library" className="w-5 h-5" />
+              <h3 className="text-xl font-semibold text-gray-800">{library.name}</h3>
+            </div>
           </div>
           {library.short_description && (
             <p className="text-gray-600 text-sm mt-1">{library.short_description}</p>
@@ -145,8 +148,11 @@ function DraggableBookshelfCard({ bookshelf, bookCount, onEdit, onDelete, onSele
         {/* Content Area - Clickable */}
         <div className="flex-1 cursor-pointer" onClick={onSelect}>
           <div className="flex items-center gap-3 mb-2">
-            <span className="bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full">🗂️ {bookCount}</span>
-            <h3 className="text-lg font-semibold text-gray-800">📚 {bookshelf.name}</h3>
+            <span className="bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full">📚 {bookCount}</span>
+            <div className="flex items-center gap-2">
+              <img src="/bookshelf.png" alt="Bookshelf" className="w-5 h-5" />
+              <h3 className="text-lg font-semibold text-gray-800">{bookshelf.name}</h3>
+            </div>
           </div>
           {bookshelf.short_description && (
             <p className="text-gray-600 text-sm mt-1">{bookshelf.short_description}</p>
@@ -242,18 +248,18 @@ function DraggableShelfCard({ shelf, books, onShelfClick, onAddBook, onDeleteShe
             }}
             className="w-full text-left border-t-4 border-amber-800 relative hover:bg-amber-50 transition-colors p-2 rounded-t"
           >
-            <div className="absolute -top-3 left-0 bg-gray-100 px-2 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-200">
-              📍 #{shelf.order}{shelf.name ? `: ${shelf.name}` : ''} • 📚 Books: {books.length}
+            <div className="absolute -top-3 left-0 bg-gray-100 px-2 py-1 text-sm font-semibold text-gray-700 hover:bg-gray-200 flex items-center gap-1">
+              <img src="/shelf.png" alt="Shelf" className="w-4 h-4" /> #{shelf.order}{shelf.name ? `: ${shelf.name}` : ''} • 📚 Books: {books.length}
             </div>
           </button>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => onAddBook(shelf)}
-            className="w-10 h-10 flex items-center justify-center rounded-lg text-green-600 hover:bg-green-50 hover:text-green-800 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-green-50 transition-colors"
             title="Add book"
           >
-            📖
+            <img src="/add_book.png" alt="Add book" className="w-6 h-6" />
           </button>
           {shelf.long_description && (
             <button
@@ -266,10 +272,10 @@ function DraggableShelfCard({ shelf, books, onShelfClick, onAddBook, onDeleteShe
           )}
           <button
             onClick={() => onDeleteShelf(shelf.id)}
-            className="w-10 h-10 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
+            className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-red-50 transition-colors"
             title="Delete shelf"
           >
-            🗑️
+            <img src="/screw.png" alt="Delete shelf" className="w-6 h-6" />
           </button>
         </div>
       </div>
@@ -316,6 +322,31 @@ export default function App() {
   const [selectedBookshelfForBook, setSelectedBookshelfForBook] = useState<string>('')
   const [selectedShelfIdForBook, setSelectedShelfIdForBook] = useState<string>('')
   const [placementType, setPlacementType] = useState<'storage' | 'shelf'>('storage')
+  const [showBorrowModal, setShowBorrowModal] = useState(false)
+  const [bookToBorrow, setBookToBorrow] = useState<Book | null>(null)
+  const [showMoveBookModal, setShowMoveBookModal] = useState(false)
+  const [bookToMove, setBookToMove] = useState<Book | null>(null)
+  const [selectedShelfForMove, setSelectedShelfForMove] = useState<Shelf | null>(null)
+  const [selectedUserForBorrow, setSelectedUserForBorrow] = useState<string>('')
+  const [showNavPane, setShowNavPaneState] = useState(() => {
+    // Initialize from localStorage, default to true
+    try {
+      const saved = localStorage.getItem('showNavPane')
+      return saved !== null ? JSON.parse(saved) : true
+    } catch {
+      return true
+    }
+  })
+  const [expandedBookshelves, setExpandedBookshelves] = useState<Set<number>>(new Set())
+  
+  // Wrapper to persist nav pane state to localStorage
+  const setShowNavPane = (value: boolean | ((prev: boolean) => boolean)) => {
+    setShowNavPaneState((prev: boolean) => {
+      const newValue = typeof value === 'function' ? (value as (prev: boolean) => boolean)(prev) : value
+      localStorage.setItem('showNavPane', JSON.stringify(newValue))
+      return newValue
+    })
+  }
   
 
   // Form states
@@ -360,11 +391,200 @@ export default function App() {
   // Variable to hold the main content that will be rendered at the bottom
   let mainContent: React.ReactNode = null
 
+  // Helper function to update URL
+  const updateUrl = (tab: string, libraryId?: number, bookshelfId?: number) => {
+    let path = '/'
+    if (tab !== 'dashboard') {
+      path = `/${tab}`
+      if (libraryId) path += `/${libraryId}`
+      if (bookshelfId) path += `/${bookshelfId}`
+    }
+    window.history.pushState({
+      tab,
+      libraryId,
+      bookshelfId,
+    }, '', path)
+  }
+
+  // Initial load and history listener
   useEffect(() => {
-    loadLibraries()
-    loadAllBooks()
-    loadUsers()
+    const loadInitialData = async () => {
+      await loadLibraries()
+      await loadAllBooks()
+      await loadUsers()
+    }
+    loadInitialData()
   }, [])
+
+  // Restore state from URL after data loads
+  useEffect(() => {
+    if (libraries.length > 0) {
+      const restoreFromUrl = async () => {
+        const path = window.location.pathname
+        const parts = path.split('/').filter(p => p)
+
+        if (parts.length === 0) {
+          // Root path - dashboard
+          setActiveMainTab('dashboard')
+          setSelectedLibrary(null)
+          setSelectedBookshelf(null)
+          return
+        }
+
+        const tab = parts[0] as 'dashboard' | 'libraries' | 'storage' | 'borrowed' | 'manage-books' | 'manage-users'
+        const libraryId = parts[1] ? parseInt(parts[1]) : undefined
+        const bookshelfId = parts[2] ? parseInt(parts[2]) : undefined
+
+        setActiveMainTab(tab)
+
+        // Restore library if needed
+        if (tab === 'libraries') {
+          if (libraryId) {
+            const lib = libraries.find((l: Library) => l.id === libraryId)
+            if (lib) {
+              setSelectedLibrary(lib)
+              // Expand the library in the nav tree
+              setExpandedBookshelves((prev: Set<number>) => {
+                const newExpanded = new Set(prev)
+                newExpanded.add(libraryId)
+                return newExpanded
+              })
+              // Load bookshelves for this library
+              try {
+                const response = await fetch(`/api/libraries/${libraryId}/bookshelves/`)
+                if (response.ok) {
+                  const bsData = await response.json()
+                  setBookshelves(bsData)
+                  
+                  // Restore bookshelf if needed
+                  if (bookshelfId) {
+                    const bs = bsData.find((b: Bookshelf) => b.id === bookshelfId)
+                    if (bs) {
+                      setSelectedBookshelf(bs)
+                      // Expand the bookshelf in the nav tree
+                      setExpandedBookshelves((prev: Set<number>) => {
+                        const newExpanded = new Set(prev)
+                        newExpanded.add(bookshelfId)
+                        return newExpanded
+                      })
+                      // Load shelves for this bookshelf
+                      const shResponse = await fetch(`/api/bookshelves/${bookshelfId}/shelves/`)
+                      if (shResponse.ok) {
+                        const shData = await shResponse.json()
+                        setShelves(shData)
+                      }
+                    } else {
+                      // Bookshelf ID in URL but not found, clear selection
+                      setSelectedBookshelf(null)
+                      setShelves([])
+                    }
+                  } else {
+                    // No bookshelf ID in URL, clear selection
+                    setSelectedBookshelf(null)
+                    setShelves([])
+                  }
+                }
+              } catch (err) {
+                console.error('Failed to restore bookshelves/shelves:', err)
+              }
+            }
+          } else {
+            // No library selected in libraries view
+            setSelectedLibrary(null)
+            setSelectedBookshelf(null)
+            setBookshelves([])
+            setShelves([])
+          }
+        }
+      }
+      restoreFromUrl()
+    }
+  }, [libraries])
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = async () => {
+      const path = window.location.pathname
+      const parts = path.split('/').filter(p => p)
+
+      if (parts.length === 0) {
+        // Root path - dashboard
+        setActiveMainTab('dashboard')
+        setSelectedLibrary(null)
+        setSelectedBookshelf(null)
+        return
+      }
+
+      const tab = parts[0] as 'dashboard' | 'libraries' | 'storage' | 'borrowed' | 'manage-books' | 'manage-users'
+      const libraryId = parts[1] ? parseInt(parts[1]) : undefined
+      const bookshelfId = parts[2] ? parseInt(parts[2]) : undefined
+
+      setActiveMainTab(tab)
+
+      // Restore library if needed
+      if (tab === 'libraries') {
+        if (libraryId && libraries.length > 0) {
+          const lib = libraries.find((l: Library) => l.id === libraryId)
+          if (lib) {
+            setSelectedLibrary(lib)
+            // Expand the library in the nav tree
+            setExpandedBookshelves((prev: Set<number>) => {
+              const newExpanded = new Set(prev)
+              newExpanded.add(libraryId)
+              return newExpanded
+            })
+            // Load bookshelves for this library
+            try {
+              const response = await fetch(`/api/libraries/${libraryId}/bookshelves/`)
+              if (response.ok) {
+                const bsData = await response.json()
+                setBookshelves(bsData)
+                
+                // Restore bookshelf if needed
+                if (bookshelfId) {
+                  const bs = bsData.find((b: Bookshelf) => b.id === bookshelfId)
+                  if (bs) {
+                    setSelectedBookshelf(bs)
+                    // Expand the bookshelf in the nav tree
+                    setExpandedBookshelves((prev: Set<number>) => {
+                      const newExpanded = new Set(prev)
+                      newExpanded.add(bookshelfId)
+                      return newExpanded
+                    })
+                    // Load shelves for this bookshelf
+                    const shResponse = await fetch(`/api/bookshelves/${bookshelfId}/shelves/`)
+                    if (shResponse.ok) {
+                      const shData = await shResponse.json()
+                      setShelves(shData)
+                    }
+                  } else {
+                    // Bookshelf ID in URL but not found, clear selection
+                    setSelectedBookshelf(null)
+                    setShelves([])
+                  }
+                } else {
+                  // No bookshelf ID in URL, clear selection
+                  setSelectedBookshelf(null)
+                  setShelves([])
+                }
+              }
+            } catch (err) {
+              console.error('Failed to restore bookshelves/shelves:', err)
+            }
+          }
+        } else {
+          // No library selected in libraries view
+          setSelectedLibrary(null)
+          setSelectedBookshelf(null)
+          setBookshelves([])
+          setShelves([])
+        }
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [libraries])
 
   // ============= LIBRARIES =============
   const loadLibraries = async () => {
@@ -372,13 +592,15 @@ export default function App() {
       const response = await fetch('/api/libraries/')
       if (!response.ok) throw new Error(`API error: ${response.status}`)
       const data = await response.json()
-      setLibraries(data)
+      // Sort by order field to preserve drag-and-drop order
+      const sortedData = data.sort((a: Library, b: Library) => (a.order || 0) - (b.order || 0))
+      setLibraries(sortedData)
       
       // Load all bookshelves for the modal dropdown
       try {
         const allBs: Bookshelf[] = []
         const allSh: Shelf[] = []
-        for (const lib of data) {
+        for (const lib of sortedData) {
           const bsResponse = await fetch(`/api/libraries/${lib.id}/bookshelves/`)
           if (bsResponse.ok) {
             const bsData = await bsResponse.json()
@@ -501,6 +723,14 @@ export default function App() {
 
   const handleSelectLibrary = async (library: Library) => {
     setSelectedLibrary(library)
+    setSelectedBookshelf(null)
+    // Expand the library in the navigation tree
+    setExpandedBookshelves((prev: Set<number>) => {
+      const newExpanded = new Set(prev)
+      newExpanded.add(library.id)
+      return newExpanded
+    })
+    updateUrl('libraries', library.id)
     await loadBookshelves(library.id)
   }
 
@@ -521,6 +751,12 @@ export default function App() {
       setBookshelfFormData({ name: '', description: '' })
       setShowCreateBookshelfModal(false)
       await loadBookshelves(selectedLibrary.id)
+      // Reload all bookshelves for navigation pane
+      const allBsResponse = await fetch('/api/bookshelves/')
+      if (allBsResponse.ok) {
+        const allBsData = await allBsResponse.json()
+        setAllBookshelves(allBsData)
+      }
     } catch (err) {
       setError(`Failed to create bookshelf: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
@@ -543,6 +779,12 @@ export default function App() {
       setEditingBookshelf(null)
       setShowCreateBookshelfModal(false)
       await loadBookshelves(selectedLibrary.id)
+      // Reload all bookshelves for navigation pane
+      const allBsResponse = await fetch('/api/bookshelves/')
+      if (allBsResponse.ok) {
+        const allBsData = await allBsResponse.json()
+        setAllBookshelves(allBsData)
+      }
     } catch (err) {
       setError(`Failed to update bookshelf: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
@@ -557,6 +799,12 @@ export default function App() {
       const response = await fetch(`/api/bookshelves/${id}/`, { method: 'DELETE' })
       if (!response.ok) throw new Error(`API error: ${response.status}`)
       await loadBookshelves(selectedLibrary.id)
+      // Reload all bookshelves for navigation pane
+      const allBsResponse = await fetch('/api/bookshelves/')
+      if (allBsResponse.ok) {
+        const allBsData = await allBsResponse.json()
+        setAllBookshelves(allBsData)
+      }
     } catch (err) {
       setError(`Failed to delete bookshelf: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
@@ -588,6 +836,16 @@ export default function App() {
 
   const handleSelectBookshelf = async (bookshelf: Bookshelf) => {
     setSelectedBookshelf(bookshelf)
+    if (selectedLibrary) {
+      // Expand both the library and bookshelf in the tree
+      setExpandedBookshelves((prev: Set<number>) => {
+        const newExpanded = new Set(prev)
+        newExpanded.add(selectedLibrary.id)
+        newExpanded.add(bookshelf.id)
+        return newExpanded
+      })
+      updateUrl('libraries', selectedLibrary.id, bookshelf.id)
+    }
     await loadShelves(bookshelf.id)
   }
 
@@ -605,6 +863,12 @@ export default function App() {
       setShelfFormData({ name: '', description: '', short_description: '', long_description: '' })
       setShowCreateShelfModal(false)
       await loadShelves(selectedBookshelf.id)
+      // Reload all shelves for navigation pane
+      const allShResponse = await fetch('/api/shelves/')
+      if (allShResponse.ok) {
+        const allShData = await allShResponse.json()
+        setAllShelves(allShData)
+      }
     } catch (err) {
       setError(`Failed to create shelf: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
@@ -634,6 +898,12 @@ export default function App() {
         }
         // Reload to get updated order values from backend
         await loadShelves(selectedBookshelf.id)
+        // Reload all shelves for navigation pane
+        const allShResponse = await fetch('/api/shelves/')
+        if (allShResponse.ok) {
+          const allShData = await allShResponse.json()
+          setAllShelves(allShData)
+        }
       }
     } catch (err) {
       setError(`Failed to delete shelf: ${err instanceof Error ? err.message : 'Unknown error'}`)
@@ -748,7 +1018,9 @@ export default function App() {
         author: bookFormData.author || undefined,
         year: bookFormData.year ? parseInt(bookFormData.year) : undefined,
         short_description: bookFormData.short_description || undefined,
-        long_description: bookFormData.long_description || undefined
+        long_description: bookFormData.long_description || undefined,
+        shelf_id: editingBook.shelf_id || undefined,
+        status: editingBook.status || 'storage'
       }
 
       const response = await fetch(`/api/books/${editingBook.id}/`, {
@@ -894,8 +1166,45 @@ export default function App() {
       if (!response.ok) throw new Error(`API error: ${response.status}`)
       await loadAllBooks()
       await loadStorageBooks()
+      if (selectedBookshelf) {
+        await loadShelves(selectedBookshelf.id)
+      }
     } catch (err) {
       setError(`Failed to move book: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    }
+  }
+
+  const handleBorrowBook = async (bookId: number, userId: number) => {
+    try {
+      const response = await fetch(`/api/books/${bookId}/borrow/${userId}/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!response.ok) throw new Error(`API error: ${response.status}`)
+      await loadAllBooks()
+      if (selectedBookshelf) {
+        await loadShelves(selectedBookshelf.id)
+      }
+      setShowBorrowModal(false)
+      setBookToBorrow(null)
+      setSelectedUserForBorrow('')
+    } catch (err) {
+      setError(`Failed to borrow book: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    }
+  }
+
+  const handleReturnBook = async (bookId: number) => {
+    if (!window.confirm('Return this book to storage?')) return
+    try {
+      const response = await fetch(`/api/books/${bookId}/return/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      if (!response.ok) throw new Error(`API error: ${response.status}`)
+      await loadAllBooks()
+      await loadStorageBooks()
+    } catch (err) {
+      setError(`Failed to return book: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
@@ -919,13 +1228,26 @@ export default function App() {
     const newLibraries = arrayMove(libraries, oldIndex, newIndex)
     setLibraries(newLibraries)
 
-    // Update backend with new order
+    // Update backend with new order for all libraries using the reorder endpoint
     try {
-      await fetch(`/api/libraries/${active.id}/`, {
-        method: 'PATCH',
+      const reorderPayload = newLibraries.map((library: Library, idx: number) => ({
+        id: library.id,
+        order: idx
+      }))
+      
+      // Use the reorder endpoint to update all libraries at once atomically
+      const response = await fetch('/api/libraries/reorder/', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order: newIndex })
+        body: JSON.stringify(reorderPayload)
       })
+      
+      if (!response.ok) {
+        throw new Error(`Reorder failed: ${response.status}`)
+      }
+      
+      // Reload libraries to ensure state matches backend
+      await loadLibraries()
     } catch (err) {
       console.error('Failed to update library order:', err)
       await loadLibraries()
@@ -944,13 +1266,23 @@ export default function App() {
     const newBookshelves = arrayMove(bookshelves, oldIndex, newIndex)
     setBookshelves(newBookshelves)
 
-    // Update backend with new order
+    // Update backend with new order for all bookshelves
     try {
-      await fetch(`/api/bookshelves/${active.id}/`, {
-        method: 'PATCH',
+      const reorderPayload = newBookshelves.map((bookshelf: any, idx: number) => ({
+        id: bookshelf.id,
+        order: idx
+      }))
+      await fetch(`/api/bookshelves/reorder/`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order: newIndex })
+        body: JSON.stringify(reorderPayload)
       })
+      // Reload all bookshelves for navigation pane
+      const allBsResponse = await fetch('/api/bookshelves/')
+      if (allBsResponse.ok) {
+        const allBsData = await allBsResponse.json()
+        setAllBookshelves(allBsData)
+      }
     } catch (err) {
       console.error('Failed to update bookshelf order:', err)
       await loadBookshelves(selectedLibrary.id)
@@ -982,6 +1314,16 @@ export default function App() {
       })
       // Reload to get updated order values from backend
       await loadShelves(selectedBookshelf.id)
+      // Reload all shelves for navigation pane with sorting
+      const allShResponse = await fetch('/api/shelves/')
+      if (allShResponse.ok) {
+        const allShData = await allShResponse.json()
+        const sorted = allShData.sort((a: any, b: any) => {
+          if (a.bookshelf_id !== b.bookshelf_id) return a.bookshelf_id - b.bookshelf_id
+          return a.order - b.order
+        })
+        setAllShelves(sorted)
+      }
     } catch (err) {
       console.error('Failed to update shelf order:', err)
       await loadShelves(selectedBookshelf.id)
@@ -992,28 +1334,174 @@ export default function App() {
   if (selectedBookshelf && selectedLibrary) {
     // BOOKSHELF DETAIL VIEW - Show shelves
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100 flex flex-col">
         <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between gap-4">
+          <div className="px-4 py-4">
+            <div className="flex items-center gap-4 justify-between">
               <div className="flex items-center gap-4">
                 <button
-                  onClick={() => setSelectedBookshelf(null)}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  onClick={() => setShowNavPane(!showNavPane)}
+                  className="text-gray-600 hover:text-gray-800 p-1"
+                  title={showNavPane ? "Hide navigation" : "Show navigation"}
                 >
-                  ← Back to Bookshelves
+                  {showNavPane ? "☰" : "►"}
                 </button>
-                <h1 className="text-3xl font-bold text-gray-900">🎯 {selectedBookshelf.name}</h1>
+                <button
+                  onClick={() => {
+                    setSelectedLibrary(null)
+                    setSelectedBookshelf(null)
+                    setExpandedBookshelves(new Set())
+                    setActiveMainTab('dashboard')
+                    updateUrl('dashboard')
+                  }}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  title="Go back to dashboard"
+                >
+                  🏠
+                </button>
               </div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"><img src="/bookshelf.png" alt="Bookshelf" className="w-8 h-8" /> {selectedBookshelf.name}</h1>
+              <div></div>
             </div>
             {selectedBookshelf.description && (
-              <p className="text-gray-600 mt-2">{selectedBookshelf.description}</p>
+              <p className="text-gray-600 mt-2 text-center">{selectedBookshelf.description}</p>
             )}
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-4 py-8">
-          {error && (
+        <div className="flex flex-1 overflow-hidden">
+          {/* Navigation Pane */}
+          {showNavPane && (
+            <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
+              <div className="p-4">
+                {/* <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2"><img src="/gps-navigation.png" alt="Navigation" className="w-5 h-5" /> Navigation</h3> */}
+                <div className="space-y-2">
+                  {libraries.length === 0 ? (
+                    <p className="text-xs text-gray-500 px-2 py-1">No libraries</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {libraries.map((library) => {
+                        const libraryBookshelves = allBookshelves
+                          .filter(bs => bs.library_id === library.id)
+                          .sort((a, b) => a.order - b.order)
+                        const isExpanded = expandedBookshelves.has(library.id)
+                        return (
+                          <div key={library.id}>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedBookshelves)
+                                  if (isExpanded) {
+                                    newExpanded.delete(library.id)
+                                  } else {
+                                    newExpanded.add(library.id)
+                                  }
+                                  setExpandedBookshelves(newExpanded)
+                                }}
+                                className="w-6 text-center px-1 py-1 text-gray-600 hover:bg-gray-200 rounded transition"
+                                title="Toggle dropdown"
+                              >
+                                {isExpanded ? "▼" : "▶"}
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  await handleSelectLibrary(library)
+                                }}
+                                className={`flex-1 flex items-center gap-2 px-2 py-1 text-sm rounded transition text-left ${
+                                  selectedLibrary?.id === library.id
+                                    ? 'bg-blue-100 text-blue-900 font-semibold'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                              >
+                                <img src="/library.png" alt="Library" className="w-4 h-4" />
+                                <span>{library.name}</span>
+                              </button>
+                            </div>
+                            
+                            {/* Bookshelves under this Library */}
+                            {isExpanded && libraryBookshelves.length > 0 && (
+                              <div className="ml-4 space-y-1">
+                                {libraryBookshelves.map((bookshelf) => {
+                                  const bookshelfShelves = allShelves.filter(s => s.bookshelf_id === bookshelf.id)
+                                  const isBookshelfExpanded = expandedBookshelves.has(bookshelf.id)
+                                  return (
+                                    <div key={bookshelf.id}>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => {
+                                            const newExpanded = new Set(expandedBookshelves)
+                                            if (isBookshelfExpanded) {
+                                              newExpanded.delete(bookshelf.id)
+                                            } else {
+                                              newExpanded.add(bookshelf.id)
+                                            }
+                                            setExpandedBookshelves(newExpanded)
+                                          }}
+                                          className="w-6 text-center px-1 py-1 text-gray-600 hover:bg-gray-200 rounded transition"
+                                          title="Toggle dropdown"
+                                        >
+                                          {isBookshelfExpanded ? "▼" : "▶"}
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            setSelectedLibrary(library)
+                                            await handleSelectBookshelf(bookshelf)
+                                          }}
+                                          className={`flex-1 flex items-center gap-2 px-2 py-1 text-xs rounded transition text-left ${
+                                            selectedBookshelf?.id === bookshelf.id
+                                              ? 'bg-green-100 text-green-900 font-semibold'
+                                              : 'text-gray-600 hover:bg-gray-100'
+                                          }`}
+                                        >
+                                          <img src="/bookshelf.png" alt="Bookshelf" className="w-4 h-4" />
+                                          <span>{bookshelf.name}</span>
+                                        </button>
+                                      </div>
+                                      
+                                      {/* Shelves under this Bookshelf */}
+                                      {isBookshelfExpanded && bookshelfShelves.length > 0 && (
+                                        <div className="ml-4 space-y-1">
+                                          {bookshelfShelves.map((shelf) => (
+                                            <button
+                                              key={shelf.id}
+                                              onClick={() => {
+                                                setShelfDetailPopup(shelf)
+                                              }}
+                                              className="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition text-left"
+                                            >
+                                              <img src="/shelf.png" alt="Shelf" className="w-4 h-4" /><span>{shelf.name || `#${shelf.order}`}</span>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                      {isBookshelfExpanded && bookshelfShelves.length === 0 && (
+                                        <div className="ml-4 px-2 py-1 text-xs text-gray-500">
+                                          No shelves
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                            {isExpanded && libraryBookshelves.length === 0 && (
+                              <div className="ml-4 px-2 py-1 text-xs text-gray-500">
+                                No bookshelves
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Main Content */}
+          <main className="flex-1 overflow-y-auto px-4 py-8">
+            <div className="max-w-7xl mx-auto">{error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
               <strong>Error:</strong> {error}
             </div>
@@ -1064,7 +1552,7 @@ export default function App() {
                     >
                       <div className="space-y-4">
                         {shelves.map((shelf) => {
-                          const shelfBooks = books.filter(b => b.shelf_id === shelf.id)
+                          const shelfBooks = books.filter(b => b.shelf_id === shelf.id && b.status !== 'borrowed')
                           return (
                             <DraggableShelfCard
                               key={shelf.id}
@@ -1091,7 +1579,9 @@ export default function App() {
               </div>
             )}
           </div>
-        </main>
+            </div>
+          </main>
+        </div>
 
         {/* Create Shelf Modal */}
         {showCreateShelfModal && (
@@ -1188,46 +1678,51 @@ export default function App() {
               {storageBooks.length === 0 ? (
                 <p className="text-center text-gray-500 py-8">No books in storage</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {storageBooks.map((book) => (
                     <div
                       key={book.id}
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.effectAllowed = 'move'
-                        e.dataTransfer.setData('bookId', book.id.toString())
-                      }}
-                      className="flex items-center justify-between bg-gray-50 p-3 rounded border-l-4 border-blue-500 cursor-move hover:bg-gray-100 transition-colors"
+                      className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500 hover:shadow-lg transition"
                     >
-                      <div className="flex-1 select-none">
-                        <p className="font-semibold text-gray-800">{book.title}</p>
-                        {(book.author || book.year) && (
-                          <p className="text-sm text-gray-600">
-                            {book.author && <span>{book.author}</span>}
-                            {book.year && <span> ({book.year})</span>}
-                          </p>
-                        )}
-                        {book.short_description && (
-                          <p className="text-xs text-gray-600 mt-1">{book.short_description}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-2 ml-2">
-                        {book.long_description && (
+                      <div className="flex justify-between items-start gap-3 mb-3">
+                        <div className="flex-1">
+                          <p className="font-bold text-lg text-gray-900">{book.title}</p>
+                        </div>
+                        <div className="flex gap-2 flex-shrink-0">
                           <button
-                            onClick={() => setDetailPopup({ type: 'book', data: book })}
-                            className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="View details"
+                            onClick={() => {
+                              setBookToBorrow(book)
+                              setShowBorrowModal(true)
+                            }}
+                            className="w-10 h-10 flex items-center justify-center rounded-lg text-green-600 hover:bg-green-50 transition"
+                            title="Lend to user"
                           >
-                            ℹ️
+                            📤
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteBook(book.id, null)}
-                          className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Delete book"
-                        >
-                          🗑️
-                        </button>
+                          <button
+                            onClick={() => {
+                              setBookToMove(book)
+                              setShowMoveBookModal(true)
+                            }}
+                            className="w-10 h-10 flex items-center justify-center rounded-lg text-orange-600 hover:bg-orange-50 transition"
+                            title="Move to shelf"
+                          >
+                            <img src="/shelf.png" alt="Shelf" className="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="space-y-1 mb-3">
+                        <p className="text-sm text-gray-600 flex items-center gap-2">
+                          <img src="/feather-pen.png" alt="Author" className="w-4 h-4" />
+                          <span>{book.author || '-'}</span>
+                        </p>
+                        <p className="text-sm text-gray-600 flex items-center gap-2">
+                          <img src="/calendar.png" alt="Date" className="w-4 h-4" />
+                          <span>{book.year || '-'}</span>
+                        </p>
+                      </div>
+                      <div className="border-t border-gray-200 pt-2">
+                        <p className="text-xs text-gray-700">{book.short_description || ''}</p>
                       </div>
                     </div>
                   ))}
@@ -1245,13 +1740,153 @@ export default function App() {
           </div>
         )}
 
+        {/* Borrow Book Modal (inside storage view) */}
+        {showBorrowModal && bookToBorrow && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]" onClick={() => { setShowBorrowModal(false); setBookToBorrow(null); setSelectedUserForBorrow('') }}>
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold flex items-center gap-2"><img src="/borrow.png" alt="Lend book" className="w-6 h-6" /> Lend book</h2>
+                <button onClick={() => { setShowBorrowModal(false); setBookToBorrow(null); setSelectedUserForBorrow('') }} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+              </div>
+              
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <p className="font-bold text-lg text-gray-900 mb-3">{bookToBorrow.title}</p>
+                <div className="space-y-1 mb-3">
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <img src="/feather-pen.png" alt="Author" className="w-4 h-4" />
+                    <span>{bookToBorrow.author || '-'}</span>
+                  </p>
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <img src="/calendar.png" alt="Date" className="w-4 h-4" />
+                    <span>{bookToBorrow.year || '-'}</span>
+                  </p>
+                </div>
+                <div className="border-t border-gray-200 pt-2">
+                  <p className="text-xs text-gray-700">{bookToBorrow.short_description || ''}</p>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select User to Borrow</label>
+                <select
+                  value={selectedUserForBorrow}
+                  onChange={(e) => setSelectedUserForBorrow(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Choose a user --</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id.toString()}>
+                      {user.full_name} {user.phone ? `(${user.phone})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setShowBorrowModal(false); setBookToBorrow(null); setSelectedUserForBorrow('') }}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedUserForBorrow) {
+                      handleBorrowBook(bookToBorrow.id, parseInt(selectedUserForBorrow))
+                    }
+                  }}
+                  disabled={!selectedUserForBorrow}
+                  className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                >
+                  Borrow Book
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Move Book Modal */}
+        {showMoveBookModal && bookToMove && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]" onClick={() => { setShowMoveBookModal(false); setBookToMove(null); setSelectedShelfForMove(null) }}>
+            <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold flex items-center gap-2"><img src="/shelf.png" alt="Shelf" className="w-6 h-6" /> Move to Shelf</h2>
+                <button onClick={() => { setShowMoveBookModal(false); setBookToMove(null); setSelectedShelfForMove(null) }} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+              </div>
+              
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                <p className="font-semibold text-gray-800">{bookToMove.title}</p>
+              </div>
+
+              <div className="space-y-4 mb-6">
+                {allShelves && allShelves.length > 0 ? (
+                  <select
+                    value={selectedShelfForMove?.id || ''}
+                    onChange={(e) => {
+                      const shelf = allShelves.find(s => s.id === parseInt(e.target.value))
+                      setSelectedShelfForMove(shelf || null)
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  >
+                    <option value="">-- Select a shelf --</option>
+                    {allShelves.map((shelf) => (
+                      <option key={shelf.id} value={shelf.id}>
+                        #{shelf.order}{shelf.name ? `: ${shelf.name}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-gray-500">No shelves available</p>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setShowMoveBookModal(false); setBookToMove(null); setSelectedShelfForMove(null) }}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (selectedShelfForMove && bookToMove) {
+                      try {
+                        const response = await fetch(`/api/books/${bookToMove.id}/move/`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ 
+                            shelf_id: selectedShelfForMove.id,
+                            status: 'library'
+                          })
+                        })
+                        if (!response.ok) throw new Error(`API error: ${response.status}`)
+                        await loadAllBooks()
+                        await loadStorageBooks()
+                        setShowMoveBookModal(false)
+                        setBookToMove(null)
+                        setSelectedShelfForMove(null)
+                      } catch (err) {
+                        setError(`Failed to move book: ${err instanceof Error ? err.message : 'Unknown error'}`)
+                      }
+                    }
+                  }}
+                  disabled={!selectedShelfForMove}
+                  className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+                >
+                  Move Book
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Shelf Detail Popup */}
         {shelfDetailPopup && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 max-h-96 overflow-y-auto">
-              <div className="flex justify-between items-center mb-4 sticky top-0 bg-white pb-4 border-b">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  📍 #{shelfDetailPopup.order}{shelfDetailPopup.name ? `: ${shelfDetailPopup.name}` : ''}
+              <div className="flex justify-between items-start mb-4 sticky top-0 bg-white pb-4 border-b">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <img src="/shelf.png" alt="Shelf" className="w-6 h-6" /> #{shelfDetailPopup.order}{shelfDetailPopup.name ? `: ${shelfDetailPopup.name}` : ''}
                 </h2>
                 <button
                   onClick={() => setShelfDetailPopup(null)}
@@ -1261,10 +1896,10 @@ export default function App() {
                 </button>
               </div>
               {shelfDetailPopup.short_description && (
-                <p className="text-sm text-gray-600 mb-4">{shelfDetailPopup.short_description}</p>
+                <p className="text-sm text-gray-600 mb-4 text-center mt-2">{shelfDetailPopup.short_description}</p>
               )}
               {(() => {
-                const shelfBooks = books.filter(b => b.shelf_id === shelfDetailPopup.id)
+                const shelfBooks = books.filter(b => b.shelf_id === shelfDetailPopup.id && b.status !== 'borrowed')
                 return shelfBooks.length === 0 ? (
                   <p className="text-center text-gray-500 py-8">No books on this shelf</p>
                 ) : (
@@ -1275,40 +1910,56 @@ export default function App() {
                         className="flex items-center justify-between bg-gray-50 p-3 rounded border-l-4 border-amber-500 hover:bg-gray-100 transition-colors"
                       >
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-800">{book.title}</p>
-                        {(book.author || book.year) && (
-                          <p className="text-sm text-gray-600">
-                            {book.author && <span>{book.author}</span>}
-                            {book.year && <span> ({book.year})</span>}
-                          </p>
-                        )}
-                        {book.short_description && (
-                          <p className="text-xs text-gray-600 mt-1">{book.short_description}</p>
-                        )}
+                        <p className="font-bold text-lg text-gray-900 mb-3">{book.title}</p>
+                        <div className="space-y-1 mb-3">
+                          {book.author && (
+                            <p className="text-sm text-gray-600 flex items-center gap-2">
+                              <img src="/feather-pen.png" alt="Author" className="w-4 h-4" />
+                              <span>{book.author}</span>
+                            </p>
+                          )}
+                          {book.year && (
+                            <p className="text-sm text-gray-600 flex items-center gap-2">
+                              <img src="/calendar.png" alt="Date" className="w-4 h-4" />
+                              <span>{book.year}</span>
+                            </p>
+                          )}
+                        </div>
+                        <div className="border-t border-gray-200 pt-2">
+                          {book.status === 'borrowed' && (
+                            <p className="text-xs text-green-600 mb-2">✅ Currently Borrowed</p>
+                          )}
+                          {book.short_description && (
+                            <p className="text-xs text-gray-700">{book.short_description}</p>
+                          )}
+                        </div>
                       </div>
                       <div className="flex gap-2 ml-2">
-                        {book.long_description && (
+                        <button
+                          onClick={() => setDetailPopup({ type: 'book', data: book })}
+                          className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                          title="View details"
+                        >
+                          ℹ️
+                        </button>
+                        {book.status !== 'borrowed' && (
                           <button
-                            onClick={() => setDetailPopup({ type: 'book', data: book })}
-                            className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="View details"
+                            onClick={() => {
+                              setBookToBorrow(book)
+                              setShowBorrowModal(true)
+                            }}
+                            className="px-2 py-1 hover:bg-green-50 rounded transition-colors"
+                            title="Lend book"
                           >
-                            ℹ️
+                            <img src="/borrow.png" alt="Lend book" className="w-5 h-5" />
                           </button>
                         )}
                         <button
                           onClick={() => handleMoveBook(book.id, null)}
-                          className="px-2 py-1 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                          className="px-2 py-1 hover:bg-orange-50 rounded transition-colors"
                           title="Move to storage"
                         >
-                          📦
-                        </button>
-                        <button
-                          onClick={() => handleDeleteBook(book.id, shelfDetailPopup.id)}
-                          className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Delete book"
-                        >
-                          🗑️
+                          <img src="/box.png" alt="Move to storage" className="w-5 h-5" />
                         </button>
                       </div>
                     </div>
@@ -1324,6 +1975,92 @@ export default function App() {
                   Close
                 </button>
               </div>
+
+              {/* Detail Popup Modal for Books within Shelf */}
+              {detailPopup && detailPopup.type === 'book' && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                  <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 max-h-96 overflow-y-auto">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        📚 <span>Book Details</span>
+                      </h2>
+                      <button
+                        onClick={() => setDetailPopup(null)}
+                        className="text-gray-500 hover:text-gray-700 text-2xl"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="font-semibold text-gray-700">Title</h3>
+                        <p className="text-gray-600 mt-1">
+                          {(detailPopup.data as Book).title}
+                        </p>
+                      </div>
+                      {((detailPopup.data as Book).author || (detailPopup.data as Book).year) && (
+                        <div>
+                          <h3 className="font-semibold text-gray-700">Author & Year</h3>
+                          <p className="text-gray-600 mt-1">
+                            {(detailPopup.data as Book).author && <span>{(detailPopup.data as Book).author}</span>}
+                            {(detailPopup.data as Book).year && <span> ({(detailPopup.data as Book).year})</span>}
+                          </p>
+                        </div>
+                      )}
+                      {(detailPopup.data as Book).short_description && (
+                        <div>
+                          <h3 className="font-semibold text-gray-700">Short Description</h3>
+                          <p className="text-gray-600 mt-1">
+                            {(detailPopup.data as Book).short_description}
+                          </p>
+                        </div>
+                      )}
+                      {(detailPopup.data as Book).long_description && (
+                        <div>
+                          <h3 className="font-semibold text-gray-700">Long Description</h3>
+                          <p className="text-gray-600 mt-1 whitespace-pre-wrap">
+                            {(detailPopup.data as Book).long_description}
+                          </p>
+                        </div>
+                      )}
+                      {(detailPopup.data as Book).status && (
+                        <div>
+                          <h3 className="font-semibold text-gray-700">Status</h3>
+                          <p className="text-gray-600 mt-1">
+                            {(detailPopup.data as Book).status === 'storage' && '📦 Storage'}
+                            {(detailPopup.data as Book).status === 'library' && '📚 Library'}
+                            {(detailPopup.data as Book).status === 'borrowed' && '👤 Borrowed'}
+                          </p>
+                        </div>
+                      )}
+                      {(detailPopup.data as Book).borrowed_by_user_name && (
+                        <div>
+                          <h3 className="font-semibold text-gray-700">Borrowed By</h3>
+                          <p className="text-gray-600 mt-1">
+                            {(detailPopup.data as Book).borrowed_by_user_name}
+                          </p>
+                        </div>
+                      )}
+                      {(detailPopup.data as Book).borrow_date && (
+                        <div>
+                          <h3 className="font-semibold text-gray-700">Borrow Date</h3>
+                          <p className="text-gray-600 mt-1">
+                            {new Date((detailPopup.data as Book).borrow_date!).toLocaleDateString()}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2 pt-4 mt-4 border-t border-gray-200">
+                      <button
+                        onClick={() => setDetailPopup(null)}
+                        className="w-full px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1354,15 +2091,25 @@ export default function App() {
                       className="flex items-center justify-between bg-gray-50 p-3 rounded border-l-4 border-blue-500 hover:bg-blue-50 transition-colors"
                     >
                       <div className="flex-1">
-                        <p className="font-semibold text-gray-800">{book.title}</p>
-                        {(book.author || book.year) && (
-                          <p className="text-sm text-gray-600">
-                            {book.author && <span>{book.author}</span>}
-                            {book.year && <span> ({book.year})</span>}
-                          </p>
-                        )}
+                        <p className="font-bold text-lg text-gray-900 mb-3">{book.title}</p>
+                        <div className="space-y-1 mb-3">
+                          {book.author && (
+                            <p className="text-sm text-gray-600 flex items-center gap-2">
+                              <img src="/feather-pen.png" alt="Author" className="w-4 h-4" />
+                              <span>{book.author}</span>
+                            </p>
+                          )}
+                          {book.year && (
+                            <p className="text-sm text-gray-600 flex items-center gap-2">
+                              <img src="/calendar.png" alt="Date" className="w-4 h-4" />
+                              <span>{book.year}</span>
+                            </p>
+                          )}
+                        </div>
                         {book.short_description && (
-                          <p className="text-xs text-gray-600 mt-1">{book.short_description}</p>
+                          <div className="border-t border-gray-200 pt-2">
+                            <p className="text-xs text-gray-700">{book.short_description}</p>
+                          </div>
                         )}
                       </div>
                       <button
@@ -1415,33 +2162,185 @@ export default function App() {
   if (selectedLibrary) {
     // LIBRARY DETAIL VIEW
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100 flex flex-col">
         <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setSelectedLibrary(null)}
-                className="text-blue-600 hover:text-blue-700 font-medium"
-              >
-                ← Back to Libraries
-              </button>
-              <h1 className="text-3xl font-bold text-gray-900">📚 {selectedLibrary.name}</h1>
+          <div className="px-4 py-4">
+            <div className="flex items-center gap-4 justify-between">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowNavPane(!showNavPane)}
+                  className="text-gray-600 hover:text-gray-800 p-1"
+                  title={showNavPane ? "Hide navigation" : "Show navigation"}
+                >
+                  {showNavPane ? "☰" : "►"}
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedLibrary(null)
+                    setSelectedBookshelf(null)
+                    setShowNavPane(true)
+                    setExpandedBookshelves(new Set())
+                    setActiveMainTab('dashboard')
+                    updateUrl('dashboard')
+                  }}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  title="Go back to dashboard"
+                >
+                  🏠
+                </button>
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"><img src="/library.png" alt="Library" className="w-8 h-8" /> {selectedLibrary.name}</h1>
+              <div></div>
             </div>
             {selectedLibrary.description && (
-              <p className="text-gray-600 mt-2">{selectedLibrary.description}</p>
+              <p className="text-gray-600 mt-2 text-center">{selectedLibrary.description}</p>
             )}
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-4 py-8">
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              <strong>Error:</strong> {error}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Navigation Pane */}
+          {showNavPane && (
+            <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
+              <div className="p-4">
+                {/* <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2"><img src="/gps-navigation.png" alt="Navigation" className="w-5 h-5" /> Navigation</h3> */}
+                <div className="space-y-2">
+                  {libraries.length === 0 ? (
+                    <p className="text-xs text-gray-500 px-2 py-1">No libraries</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {libraries.map((library) => {
+                        const libraryBookshelves = allBookshelves
+                          .filter(bs => bs.library_id === library.id)
+                          .sort((a, b) => a.order - b.order)
+                        const isExpanded = expandedBookshelves.has(library.id)
+                        return (
+                          <div key={library.id}>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedBookshelves)
+                                  if (isExpanded) {
+                                    newExpanded.delete(library.id)
+                                  } else {
+                                    newExpanded.add(library.id)
+                                  }
+                                  setExpandedBookshelves(newExpanded)
+                                }}
+                                className="w-6 text-center px-1 py-1 text-gray-600 hover:bg-gray-200 rounded transition"
+                                title="Toggle dropdown"
+                              >
+                                {isExpanded ? "▼" : "▶"}
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  await handleSelectLibrary(library)
+                                }}
+                                className={`flex-1 flex items-center gap-2 px-2 py-1 text-sm rounded transition text-left ${
+                                  selectedLibrary?.id === library.id
+                                    ? 'bg-blue-100 text-blue-900 font-semibold'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                              >
+                                <img src="/library.png" alt="Library" className="w-4 h-4" />
+                                <span>{library.name}</span>
+                              </button>
+                            </div>
+                            
+                            {/* Bookshelves under this Library */}
+                            {isExpanded && libraryBookshelves.length > 0 && (
+                              <div className="ml-4 space-y-1">
+                                {libraryBookshelves.map((bookshelf) => {
+                                  const bookshelfShelves = allShelves.filter(s => s.bookshelf_id === bookshelf.id)
+                                  const isBookshelfExpanded = expandedBookshelves.has(bookshelf.id)
+                                  return (
+                                    <div key={bookshelf.id}>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => {
+                                            const newExpanded = new Set(expandedBookshelves)
+                                            if (isBookshelfExpanded) {
+                                              newExpanded.delete(bookshelf.id)
+                                            } else {
+                                              newExpanded.add(bookshelf.id)
+                                            }
+                                            setExpandedBookshelves(newExpanded)
+                                          }}
+                                          className="w-6 text-center px-1 py-1 text-gray-600 hover:bg-gray-200 rounded transition"
+                                          title="Toggle dropdown"
+                                        >
+                                          {isBookshelfExpanded ? "▼" : "▶"}
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            setSelectedLibrary(library)
+                                            await handleSelectBookshelf(bookshelf)
+                                          }}
+                                          className={`flex-1 flex items-center gap-2 px-2 py-1 text-xs rounded transition text-left ${
+                                            selectedBookshelf?.id === bookshelf.id
+                                              ? 'bg-green-100 text-green-900 font-semibold'
+                                              : 'text-gray-600 hover:bg-gray-100'
+                                          }`}
+                                        >
+                                          <img src="/bookshelf.png" alt="Bookshelf" className="w-4 h-4" />
+                                          <span>{bookshelf.name}</span>
+                                        </button>
+                                      </div>
+                                      
+                                      {/* Shelves under this Bookshelf */}
+                                      {isBookshelfExpanded && bookshelfShelves.length > 0 && (
+                                        <div className="ml-4 space-y-1">
+                                          {bookshelfShelves.map((shelf) => (
+                                            <button
+                                              key={shelf.id}
+                                              onClick={async () => {
+                                                setSelectedLibrary(library)
+                                                await handleSelectBookshelf(bookshelf)
+                                                setShelfDetailPopup(shelf)
+                                              }}
+                                              className="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition text-left"
+                                            >
+                                              <img src="/shelf.png" alt="Shelf" className="w-4 h-4" /><span>{shelf.name || `#${shelf.order}`}</span>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                      {isBookshelfExpanded && bookshelfShelves.length === 0 && (
+                                        <div className="ml-4 px-2 py-1 text-xs text-gray-500">
+                                          No shelves
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                            {isExpanded && libraryBookshelves.length === 0 && (
+                              <div className="ml-4 px-2 py-1 text-xs text-gray-500">
+                                No bookshelves
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
-          <div className="mb-6 flex justify-between items-center">
-            <h2 className="text-2xl font-bold text-gray-800">Bookshelves ({bookshelves.length})</h2>
+          {/* Main Content */}
+          <main className="flex-1 overflow-y-auto px-4 py-8">
+            <div className="max-w-7xl mx-auto">
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                  <strong>Error:</strong> {error}
+                </div>
+              )}
+
+              <div className="mb-6 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-800">Bookshelves ({bookshelves.length})</h2>
             <button
               onClick={() => {
                 setEditingBookshelf(null)
@@ -1481,7 +2380,7 @@ export default function App() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {bookshelves.map((bookshelf) => {
                     const bookshelfShelves = allShelves.filter(s => s.bookshelf_id === bookshelf.id)
-                    const bookshelfBookCount = books.filter(b => bookshelfShelves.some(s => s.id === b.shelf_id)).length
+                    const bookshelfBookCount = books.filter(b => bookshelfShelves.some(s => s.id === b.shelf_id) && b.status !== 'borrowed').length
                     return (
                       <DraggableBookshelfCard
                         key={bookshelf.id}
@@ -1498,7 +2397,9 @@ export default function App() {
               </SortableContext>
             </DndContext>
           )}
-        </main>
+            </div>
+          </main>
+        </div>
 
         {/* Create/Edit Bookshelf Modal */}
         {showCreateBookshelfModal && (
@@ -1575,16 +2476,15 @@ export default function App() {
           </div>
         )}
 
-        {/* Detail Popup Modal for Bookshelf View */}
-        {detailPopup && (
+        {/* Detail Popup Modal for Bookshelf View - Only for non-book types */}
+        {detailPopup && (detailPopup.type === 'library' || detailPopup.type === 'bookshelf' || detailPopup.type === 'shelf') && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {detailPopup.type === 'library' && '🏛️ Library Details'}
-                  {detailPopup.type === 'bookshelf' && '🗂️ Bookshelf Details'}
-                  {detailPopup.type === 'shelf' && '📍 Shelf Details'}
-                  {detailPopup.type === 'book' && '📚 Book Details'}
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  {detailPopup.type === 'library' && <><img src="/library.png" alt="Library" className="w-6 h-6" /> <span>Library Details</span></>}
+                  {detailPopup.type === 'bookshelf' && <><img src="/bookshelf.png" alt="Bookshelf" className="w-6 h-6" /> <span>Bookshelf Details</span></>}
+                  {detailPopup.type === 'shelf' && <><img src="/shelf.png" alt="Shelf" className="w-6 h-6" /> <span>Shelf Details</span></>}
                 </h2>
                 <button
                   onClick={() => setDetailPopup(null)}
@@ -1600,29 +2500,14 @@ export default function App() {
                     {detailPopup.type === 'library' && (detailPopup.data as Library).name}
                     {detailPopup.type === 'bookshelf' && (detailPopup.data as Bookshelf).name}
                     {detailPopup.type === 'shelf' && ((detailPopup.data as Shelf).name || '(No name)')}
-                    {detailPopup.type === 'book' && (detailPopup.data as Book).title}
                   </p>
                 </div>
-                {detailPopup.type === 'book' && (
-                  <>
-                    {((detailPopup.data as Book).author || (detailPopup.data as Book).year) && (
-                      <div>
-                        <h3 className="font-semibold text-gray-700">Author & Year</h3>
-                        <p className="text-gray-600 mt-1">
-                          {(detailPopup.data as Book).author && <span>{(detailPopup.data as Book).author}</span>}
-                          {(detailPopup.data as Book).year && <span> ({(detailPopup.data as Book).year})</span>}
-                        </p>
-                      </div>
-                    )}
-                  </>
-                )}
                 <div>
                   <h3 className="font-semibold text-gray-700">Short Description</h3>
                   <p className="text-gray-600 mt-1">
                     {detailPopup.type === 'library' && ((detailPopup.data as Library).short_description || '(None)')}
                     {detailPopup.type === 'bookshelf' && ((detailPopup.data as Bookshelf).short_description || '(None)')}
                     {detailPopup.type === 'shelf' && ((detailPopup.data as Shelf).short_description || '(None)')}
-                    {detailPopup.type === 'book' && ((detailPopup.data as Book).short_description || '(None)')}
                   </p>
                 </div>
                 <div>
@@ -1631,7 +2516,6 @@ export default function App() {
                     {detailPopup.type === 'library' && ((detailPopup.data as Library).long_description || '(None)')}
                     {detailPopup.type === 'bookshelf' && ((detailPopup.data as Bookshelf).long_description || '(None)')}
                     {detailPopup.type === 'shelf' && ((detailPopup.data as Shelf).long_description || '(None)')}
-                    {detailPopup.type === 'book' && ((detailPopup.data as Book).long_description || '(None)')}
                   </p>
                 </div>
               </div>
@@ -1657,7 +2541,7 @@ export default function App() {
         <header className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 py-6">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">🏛️ Library Monitor</h1>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2"><img src="/library.png" alt="Library" className="w-8 h-8" /> Library Monitor</h1>
               <p className="text-gray-600 mt-1">Manage your library collection efficiently</p>
             </div>
           </div>
@@ -1669,11 +2553,26 @@ export default function App() {
             shelves={shelves}
             selectedBookshelf={selectedBookshelf}
             libraries={libraries}
-            onStorageClick={() => setActiveMainTab('storage')}
-            onLibraryClick={() => setActiveMainTab('libraries')}
-            onBorrowedClick={() => setActiveMainTab('borrowed')}
-            onManageBooks={() => setActiveMainTab('manage-books')}
-            onManageUsers={() => setActiveMainTab('manage-users')}
+            onStorageClick={() => {
+              setActiveMainTab('storage')
+              updateUrl('storage')
+            }}
+            onLibraryClick={() => {
+              setActiveMainTab('libraries')
+              updateUrl('libraries')
+            }}
+            onBorrowedClick={() => {
+              setActiveMainTab('borrowed')
+              updateUrl('borrowed')
+            }}
+            onManageBooks={() => {
+              setActiveMainTab('manage-books')
+              updateUrl('manage-books')
+            }}
+            onManageUsers={() => {
+              setActiveMainTab('manage-users')
+              updateUrl('manage-users')
+            }}
           />
         </main>
 
@@ -1869,14 +2768,23 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gray-100">
         <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-            <button
-              onClick={() => setActiveMainTab('dashboard')}
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              ← Back to Dashboard
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">📦 Storage</h1>
+          <div className="px-4 py-4">
+            <div className="flex items-center gap-4 justify-between">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    setActiveMainTab('dashboard')
+                    updateUrl('dashboard')
+                  }}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  title="Go back to dashboard"
+                >
+                  🏠
+                </button>
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"><img src="/box.png" alt="Storage" className="w-8 h-8" /> Storage</h1>
+              <div></div>
+            </div>
           </div>
         </header>
         <main className="max-w-7xl mx-auto px-4 py-8">
@@ -1887,16 +2795,145 @@ export default function App() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {storageBooks.map((book) => (
-                <div key={book.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
-                  <p className="font-semibold text-gray-800">{book.title}</p>
-                  {book.author && <p className="text-sm text-gray-600">{book.author}</p>}
-                  {book.year && <p className="text-sm text-gray-500">{book.year}</p>}
-                  {book.short_description && <p className="text-xs text-gray-600 mt-2">{book.short_description}</p>}
+                <div key={book.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500 flex flex-col h-full">
+                  <div className="flex justify-between items-start gap-3 mb-3">
+                    <div className="flex-1">
+                      <p className="font-bold text-lg text-gray-900">{book.title}</p>
+                    </div>
+                    <div className="flex gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => setDetailPopup({ type: 'book', data: book })}
+                        className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="View details"
+                      >
+                        ℹ️
+                      </button>
+                      <button
+                        onClick={() => {
+                          setBookToBorrow(book)
+                          setShowBorrowModal(true)
+                        }}
+                        className="px-2 py-1 hover:bg-green-50 rounded transition-colors"
+                        title="Lend book"
+                      >
+                        <img src="/borrow.png" alt="Lend book" className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setBookToMove(book)
+                          setShowMoveBookModal(true)
+                        }}
+                        className="px-2 py-1 hover:bg-orange-50 rounded transition-colors"
+                        title="Move to shelf"
+                      >
+                        <img src="/shelf.png" alt="Shelf" className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1 mb-3">
+                    <p className="text-sm text-gray-600 flex items-center gap-2">
+                      <img src="/feather-pen.png" alt="Author" className="w-4 h-4" />
+                      <span>{book.author || '-'}</span>
+                    </p>
+                    <p className="text-sm text-gray-600 flex items-center gap-2">
+                      <img src="/calendar.png" alt="Date" className="w-4 h-4" />
+                      <span>{book.year || '-'}</span>
+                    </p>
+                  </div>
+                  <div className="border-t border-gray-200 pt-2">
+                    <p className="text-xs text-gray-700">{book.short_description || ''}</p>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </main>
+
+        {/* Detail Popup Modal */}
+        {detailPopup && detailPopup.type === 'book' && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 max-h-96 overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  📚 <span>Book Details</span>
+                </h2>
+                <button
+                  onClick={() => setDetailPopup(null)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-gray-700">Title</h3>
+                  <p className="text-gray-600 mt-1">
+                    {(detailPopup.data as Book).title}
+                  </p>
+                </div>
+                {((detailPopup.data as Book).author || (detailPopup.data as Book).year) && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Author & Year</h3>
+                    <p className="text-gray-600 mt-1">
+                      {(detailPopup.data as Book).author && <span>{(detailPopup.data as Book).author}</span>}
+                      {(detailPopup.data as Book).year && <span> ({(detailPopup.data as Book).year})</span>}
+                    </p>
+                  </div>
+                )}
+                {(detailPopup.data as Book).short_description && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Short Description</h3>
+                    <p className="text-gray-600 mt-1">
+                      {(detailPopup.data as Book).short_description}
+                    </p>
+                  </div>
+                )}
+                {(detailPopup.data as Book).long_description && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Long Description</h3>
+                    <p className="text-gray-600 mt-1 whitespace-pre-wrap">
+                      {(detailPopup.data as Book).long_description}
+                    </p>
+                  </div>
+                )}
+                {(detailPopup.data as Book).status && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Status</h3>
+                    <p className="text-gray-600 mt-1">
+                      {(detailPopup.data as Book).status === 'storage' && '📦 Storage'}
+                      {(detailPopup.data as Book).status === 'library' && '📚 Library'}
+                      {(detailPopup.data as Book).status === 'borrowed' && '👤 Borrowed'}
+                    </p>
+                  </div>
+                )}
+                {(detailPopup.data as Book).borrowed_by_user_name && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Borrowed By</h3>
+                    <p className="text-gray-600 mt-1">
+                      {(detailPopup.data as Book).borrowed_by_user_name}
+                    </p>
+                  </div>
+                )}
+                {(detailPopup.data as Book).borrow_date && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Borrow Date</h3>
+                    <p className="text-gray-600 mt-1">
+                      {new Date((detailPopup.data as Book).borrow_date!).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 pt-4 mt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setDetailPopup(null)}
+                  className="w-full px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -1906,14 +2943,23 @@ export default function App() {
     return (
       <div className="min-h-screen bg-gray-100">
         <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-            <button
-              onClick={() => setActiveMainTab('dashboard')}
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              ← Back to Dashboard
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">✨ Borrowed</h1>
+          <div className="px-4 py-4">
+            <div className="flex items-center gap-4 justify-between">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => {
+                    setActiveMainTab('dashboard')
+                    updateUrl('dashboard')
+                  }}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                  title="Go back to dashboard"
+                >
+                  🏠
+                </button>
+              </div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"><img src="/borrow.png" alt="Borrowed" className="w-8 h-8" /> Borrowed</h1>
+              <div></div>
+            </div>
           </div>
         </header>
         <main className="max-w-7xl mx-auto px-4 py-8">
@@ -1924,16 +2970,129 @@ export default function App() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {borrowedBooks.map((book) => (
-                <div key={book.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
-                  <p className="font-semibold text-gray-800">{book.title}</p>
-                  {book.author && <p className="text-sm text-gray-600">{book.author}</p>}
-                  {book.year && <p className="text-sm text-gray-500">{book.year}</p>}
-                  {book.short_description && <p className="text-xs text-gray-600 mt-2">{book.short_description}</p>}
+                <div key={book.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500 flex flex-col h-full">
+                  <div className="flex-1">
+                    <p className="font-bold text-lg text-gray-900 mb-3">{book.title}</p>
+                    <div className="space-y-1 mb-3">
+                      {book.author && (
+                        <p className="text-sm text-gray-600 flex items-center gap-2">
+                          <img src="/feather-pen.png" alt="Author" className="w-4 h-4" />
+                          <span>{book.author}</span>
+                        </p>
+                      )}
+                      {book.year && (
+                        <p className="text-sm text-gray-600 flex items-center gap-2">
+                          <img src="/calendar.png" alt="Date" className="w-4 h-4" />
+                          <span>{book.year}</span>
+                        </p>
+                      )}
+                    </div>
+                    <div className="border-t border-gray-200 pt-2">
+                      {book.short_description && (
+                        <p className="text-xs text-gray-700 mb-1">{book.short_description}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-auto">
+                    <button
+                      onClick={() => handleReturnBook(book.id)}
+                      className="flex-1 px-3 py-2 text-sm bg-orange-100 text-orange-700 hover:bg-orange-200 rounded transition flex items-center justify-center gap-2"
+                    >
+                      <img src="/return_book.png" alt="Return to storage" className="w-4 h-4" />
+                      Return to storage
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </main>
+
+        {/* Detail Popup Modal */}
+        {detailPopup && detailPopup.type === 'book' && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 max-h-96 overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  📚 <span>Book Details</span>
+                </h2>
+                <button
+                  onClick={() => setDetailPopup(null)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-semibold text-gray-700">Title</h3>
+                  <p className="text-gray-600 mt-1">
+                    {(detailPopup.data as Book).title}
+                  </p>
+                </div>
+                {((detailPopup.data as Book).author || (detailPopup.data as Book).year) && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Author & Year</h3>
+                    <p className="text-gray-600 mt-1">
+                      {(detailPopup.data as Book).author && <span>{(detailPopup.data as Book).author}</span>}
+                      {(detailPopup.data as Book).year && <span> ({(detailPopup.data as Book).year})</span>}
+                    </p>
+                  </div>
+                )}
+                {(detailPopup.data as Book).short_description && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Short Description</h3>
+                    <p className="text-gray-600 mt-1">
+                      {(detailPopup.data as Book).short_description}
+                    </p>
+                  </div>
+                )}
+                {(detailPopup.data as Book).long_description && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Long Description</h3>
+                    <p className="text-gray-600 mt-1 whitespace-pre-wrap">
+                      {(detailPopup.data as Book).long_description}
+                    </p>
+                  </div>
+                )}
+                {(detailPopup.data as Book).status && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Status</h3>
+                    <p className="text-gray-600 mt-1">
+                      {(detailPopup.data as Book).status === 'storage' && '📦 Storage'}
+                      {(detailPopup.data as Book).status === 'library' && '📚 Library'}
+                      {(detailPopup.data as Book).status === 'borrowed' && '👤 Borrowed'}
+                    </p>
+                  </div>
+                )}
+                {(detailPopup.data as Book).borrowed_by_user_name && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Borrowed By</h3>
+                    <p className="text-gray-600 mt-1">
+                      {(detailPopup.data as Book).borrowed_by_user_name}
+                    </p>
+                  </div>
+                )}
+                {(detailPopup.data as Book).borrow_date && (
+                  <div>
+                    <h3 className="font-semibold text-gray-700">Borrow Date</h3>
+                    <p className="text-gray-600 mt-1">
+                      {new Date((detailPopup.data as Book).borrow_date!).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-2 pt-4 mt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setDetailPopup(null)}
+                  className="w-full px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -1941,17 +3100,27 @@ export default function App() {
   if (activeMainTab === 'libraries') {
     // LIBRARIES VIEW
     return (
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100 flex flex-col">
         <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="px-4 py-4">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setActiveMainTab('dashboard')}
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                onClick={() => setShowNavPane(!showNavPane)}
+                className="text-gray-600 hover:text-gray-800 p-1"
+                title={showNavPane ? "Hide navigation" : "Show navigation"}
               >
-                ← Back to Dashboard
+                {showNavPane ? "☰" : "►"}
               </button>
-              <h1 className="text-3xl font-bold text-gray-900">🏛️ Libraries</h1>
+              <button
+                onClick={() => {
+                  setActiveMainTab('dashboard')
+                  updateUrl('dashboard')
+                }}
+                className="text-blue-600 hover:text-blue-700 font-medium"
+                title="Go back to dashboard"
+              >
+                🏠
+              </button>
               <button
                 onClick={() => {
                   setLibraryFormData({ name: '', description: '', address: '', phone: '', email: '' })
@@ -1965,14 +3134,154 @@ export default function App() {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-4 py-8">
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-              <strong>Error:</strong> {error}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Navigation Pane */}
+          {showNavPane && (
+            <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto">
+              <div className="p-4">
+                {/* <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2"><img src="/gps-navigation.png" alt="Navigation" className="w-5 h-5" /> Navigation</h3> */}
+                <div className="space-y-2">
+                  {libraries.length === 0 ? (
+                    <p className="text-xs text-gray-500 px-2 py-1">No libraries</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {libraries.map((library) => {
+                        const libraryBookshelves = allBookshelves
+                          .filter(bs => bs.library_id === library.id)
+                          .sort((a, b) => a.order - b.order)
+                        const isExpanded = expandedBookshelves.has(library.id)
+                        return (
+                          <div key={library.id}>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => {
+                                  const newExpanded = new Set(expandedBookshelves)
+                                  if (isExpanded) {
+                                    newExpanded.delete(library.id)
+                                  } else {
+                                    newExpanded.add(library.id)
+                                  }
+                                  setExpandedBookshelves(newExpanded)
+                                }}
+                                className="w-6 text-center px-1 py-1 text-gray-600 hover:bg-gray-200 rounded transition"
+                                title="Toggle dropdown"
+                              >
+                                {isExpanded ? "▼" : "▶"}
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  // Navigate to library detail view
+                                  await handleSelectLibrary(library)
+                                  // Keep tree expanded
+                                }}
+                                className={`flex-1 flex items-center gap-2 px-2 py-1 text-sm rounded transition text-left ${
+                                  selectedLibrary?.id === library.id
+                                    ? 'bg-blue-100 text-blue-900 font-semibold'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                              >
+                                <img src="/library.png" alt="Library" className="w-4 h-4" />
+                                <span>{library.name}</span>
+                              </button>
+                            </div>
+                            
+                            {/* Bookshelves under this Library */}
+                            {isExpanded && libraryBookshelves.length > 0 && (
+                              <div className="ml-4 space-y-1">
+                                {libraryBookshelves.map((bookshelf) => {
+                                  const bookshelfShelves = allShelves.filter(s => s.bookshelf_id === bookshelf.id)
+                                  const isBookshelfExpanded = expandedBookshelves.has(bookshelf.id)
+                                  return (
+                                    <div key={bookshelf.id}>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => {
+                                            const newExpanded = new Set(expandedBookshelves)
+                                            if (isBookshelfExpanded) {
+                                              newExpanded.delete(bookshelf.id)
+                                            } else {
+                                              newExpanded.add(bookshelf.id)
+                                            }
+                                            setExpandedBookshelves(newExpanded)
+                                          }}
+                                          className="w-6 text-center px-1 py-1 text-gray-600 hover:bg-gray-200 rounded transition"
+                                          title="Toggle dropdown"
+                                        >
+                                          {isBookshelfExpanded ? "▼" : "▶"}
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            // Navigate to bookshelf detail view
+                                            setSelectedLibrary(library)
+                                            await handleSelectBookshelf(bookshelf)
+                                            // Keep tree expanded
+                                          }}
+                                          className={`flex-1 flex items-center gap-2 px-2 py-1 text-xs rounded transition text-left ${
+                                            selectedBookshelf?.id === bookshelf.id
+                                              ? 'bg-green-100 text-green-900 font-semibold'
+                                              : 'text-gray-600 hover:bg-gray-100'
+                                          }`}
+                                        >
+                                          <img src="/bookshelf.png" alt="Bookshelf" className="w-4 h-4" />
+                                          <span>{bookshelf.name}</span>
+                                        </button>
+                                      </div>
+                                      
+                                      {/* Shelves under this Bookshelf */}
+                                      {isBookshelfExpanded && bookshelfShelves.length > 0 && (
+                                        <div className="ml-4 space-y-1">
+                                          {bookshelfShelves.map((shelf) => (
+                                            <button
+                                              key={shelf.id}
+                                              onClick={async () => {
+                                                // Navigate to bookshelf detail view with shelf details
+                                                setSelectedLibrary(library)
+                                                await handleSelectBookshelf(bookshelf)
+                                                setShelfDetailPopup(shelf)
+                                                // Keep tree expanded
+                                              }}
+                                              className="w-full flex items-center gap-2 px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition text-left"
+                                            >
+                                              <img src="/shelf.png" alt="Shelf" className="w-4 h-4" /><span>{shelf.name || `#${shelf.order}`}</span>
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                      {isBookshelfExpanded && bookshelfShelves.length === 0 && (
+                                        <div className="ml-4 px-2 py-1 text-xs text-gray-500">
+                                          No shelves
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )}
+                            {isExpanded && libraryBookshelves.length === 0 && (
+                              <div className="ml-4 px-2 py-1 text-xs text-gray-500">
+                                No bookshelves
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
-          {libraries.length === 0 ? (
+          {/* Main Content */}
+          <main className="flex-1 overflow-y-auto px-4 py-8">
+            <div className="max-w-7xl mx-auto">
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                  <strong>Error:</strong> {error}
+                </div>
+              )}
+
+              {libraries.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
               <p className="text-gray-500 mb-4">No libraries yet. Create one to get started!</p>
               <button
@@ -2001,7 +3310,7 @@ export default function App() {
                       const bookshelf = allBookshelves.find(bs => bs.id === s.bookshelf_id)
                       return bookshelf && bookshelf.library_id === library.id
                     })
-                    const libraryBookCount = books.filter(b => libraryShelves.some(s => s.id === b.shelf_id)).length
+                    const libraryBookCount = books.filter(b => libraryShelves.some(s => s.id === b.shelf_id) && b.status !== 'borrowed').length
                     return (
                       <DraggableLibraryCard
                         key={library.id}
@@ -2018,18 +3327,20 @@ export default function App() {
               </SortableContext>
             </DndContext>
           )}
-        </main>
+            </div>
+          </main>
+        </div>
 
         {/* Detail Popup Modal for Libraries View */}
         {detailPopup && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {detailPopup.type === 'library' && '🏛️ Library Details'}
-                  {detailPopup.type === 'bookshelf' && '🗂️ Bookshelf Details'}
-                  {detailPopup.type === 'shelf' && '📍 Shelf Details'}
-                  {detailPopup.type === 'book' && '📚 Book Details'}
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  {detailPopup.type === 'library' && <><img src="/library.png" alt="Library" className="w-6 h-6" /> <span>Library Details</span></>}
+                  {detailPopup.type === 'bookshelf' && <><img src="/bookshelf.png" alt="Bookshelf" className="w-6 h-6" /> <span>Bookshelf Details</span></>}
+                  {detailPopup.type === 'shelf' && <><img src="/shelf.png" alt="Shelf" className="w-6 h-6" /> <span>Shelf Details</span></>}
+                  {detailPopup.type === 'book' && <>📚 <span>Book Details</span></>}
                 </h2>
                 <button
                   onClick={() => setDetailPopup(null)}
@@ -2234,10 +3545,14 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setActiveMainTab('dashboard')}
+                onClick={() => {
+                  setActiveMainTab('dashboard')
+                  updateUrl('dashboard')
+                }}
                 className="text-blue-600 hover:text-blue-700 font-medium"
+                title="Go back to dashboard"
               >
-                ← Back to Dashboard
+                🏠
               </button>
               <h1 className="text-3xl font-bold text-gray-900">📚 Manage Books</h1>
               <button
@@ -2267,7 +3582,7 @@ export default function App() {
               📦 Storage <span className="bg-red-500 text-white px-2 py-1 rounded-full text-sm">{storageCount}</span>
             </button>
             <button className="flex items-center gap-2 px-6 py-3 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition">
-              🏛️ Library <span className="bg-green-500 text-white px-2 py-1 rounded-full text-sm">{libraryCount}</span>
+              <img src="/library.png" alt="Library" className="w-5 h-5" /> Library <span className="bg-green-500 text-white px-2 py-1 rounded-full text-sm">{libraryCount}</span>
             </button>
             <button className="flex items-center gap-2 px-6 py-3 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition">
               👤 Borrowed <span className="bg-purple-500 text-white px-2 py-1 rounded-full text-sm">{borrowedCount}</span>
@@ -2297,34 +3612,50 @@ export default function App() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {books.filter(b => b.status === 'storage').map((book) => (
-                      <div key={book.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-red-500 hover:shadow-lg transition">
-                        <p className="font-semibold text-gray-800">{book.title}</p>
-                        {book.author && <p className="text-sm text-gray-600">{book.author}</p>}
-                        {book.year && <p className="text-sm text-gray-500">{book.year}</p>}
-                        {book.short_description && <p className="text-xs text-gray-600 mt-2">{book.short_description}</p>}
-                        <div className="flex gap-2 mt-4">
-                          <button
-                            onClick={() => {
-                              setEditingBook(book)
-                              setBookFormData({
-                                title: book.title,
-                                author: book.author || '',
-                                year: book.year || '',
-                                short_description: book.short_description || '',
-                                long_description: book.long_description || ''
-                              })
-                              setShowCreateBookModal(true)
-                            }}
-                            className="flex-1 text-sm px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded transition"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBook(book.id, book.shelf_id || null)}
-                            className="flex-1 text-sm px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded transition"
-                          >
-                            Delete
-                          </button>
+                      <div key={book.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-red-500 hover:shadow-lg transition flex flex-col h-full">
+                        <div className="flex justify-between items-start gap-3 mb-3">
+                          <div className="flex-1">
+                            <p className="font-bold text-lg text-gray-900">{book.title}</p>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                setEditingBook(book)
+                                setBookFormData({
+                                  title: book.title,
+                                  author: book.author || '',
+                                  year: book.year || '',
+                                  short_description: book.short_description || '',
+                                  long_description: book.long_description || ''
+                                })
+                                setShowCreateBookModal(true)
+                              }}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50 transition"
+                              title="Edit book"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBook(book.id, book.shelf_id || null)}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 transition"
+                              title="Delete book"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-1 mb-3">
+                          <p className="text-sm text-gray-600 flex items-center gap-2">
+                            <img src="/feather-pen.png" alt="Author" className="w-4 h-4" />
+                            <span>{book.author || '-'}</span>
+                          </p>
+                          <p className="text-sm text-gray-600 flex items-center gap-2">
+                            <img src="/calendar.png" alt="Date" className="w-4 h-4" />
+                            <span>{book.year || '-'}</span>
+                          </p>
+                        </div>
+                        <div className="border-t border-gray-200 pt-2 mt-auto">
+                          <p className="text-xs text-gray-700">{book.short_description || ''}</p>
                         </div>
                       </div>
                     ))}
@@ -2334,40 +3665,56 @@ export default function App() {
 
               {/* Library Books */}
               <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-4">🏛️ Library ({libraryCount})</h2>
+                <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2"><img src="/library.png" alt="Library" className="w-5 h-5" /> Library ({libraryCount})</h2>
                 {books.filter(b => b.status === 'library').length === 0 ? (
                   <p className="text-gray-500">No books in library</p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {books.filter(b => b.status === 'library').map((book) => (
-                      <div key={book.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500 hover:shadow-lg transition">
-                        <p className="font-semibold text-gray-800">{book.title}</p>
-                        {book.author && <p className="text-sm text-gray-600">{book.author}</p>}
-                        {book.year && <p className="text-sm text-gray-500">{book.year}</p>}
-                        {book.short_description && <p className="text-xs text-gray-600 mt-2">{book.short_description}</p>}
-                        <div className="flex gap-2 mt-4">
-                          <button
-                            onClick={() => {
-                              setEditingBook(book)
-                              setBookFormData({
-                                title: book.title,
-                                author: book.author || '',
-                                year: book.year || '',
-                                short_description: book.short_description || '',
-                                long_description: book.long_description || ''
-                              })
-                              setShowCreateBookModal(true)
-                            }}
-                            className="flex-1 text-sm px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded transition"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBook(book.id, book.shelf_id || null)}
-                            className="flex-1 text-sm px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded transition"
-                          >
-                            Delete
-                          </button>
+                      <div key={book.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500 hover:shadow-lg transition flex flex-col h-full">
+                        <div className="flex justify-between items-start gap-3 mb-3">
+                          <div className="flex-1">
+                            <p className="font-bold text-lg text-gray-900">{book.title}</p>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                setEditingBook(book)
+                                setBookFormData({
+                                  title: book.title,
+                                  author: book.author || '',
+                                  year: book.year || '',
+                                  short_description: book.short_description || '',
+                                  long_description: book.long_description || ''
+                                })
+                                setShowCreateBookModal(true)
+                              }}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50 transition"
+                              title="Edit book"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBook(book.id, book.shelf_id || null)}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 transition"
+                              title="Delete book"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-1 mb-3">
+                          <p className="text-sm text-gray-600 flex items-center gap-2">
+                            <img src="/feather-pen.png" alt="Author" className="w-4 h-4" />
+                            <span>{book.author || '-'}</span>
+                          </p>
+                          <p className="text-sm text-gray-600 flex items-center gap-2">
+                            <img src="/calendar.png" alt="Date" className="w-4 h-4" />
+                            <span>{book.year || '-'}</span>
+                          </p>
+                        </div>
+                        <div className="border-t border-gray-200 pt-2 mt-auto">
+                          <p className="text-xs text-gray-700">{book.short_description || ''}</p>
                         </div>
                       </div>
                     ))}
@@ -2383,34 +3730,50 @@ export default function App() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {books.filter(b => b.status === 'borrowed').map((book) => (
-                      <div key={book.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500 hover:shadow-lg transition">
-                        <p className="font-semibold text-gray-800">{book.title}</p>
-                        {book.author && <p className="text-sm text-gray-600">{book.author}</p>}
-                        {book.year && <p className="text-sm text-gray-500">{book.year}</p>}
-                        {book.short_description && <p className="text-xs text-gray-600 mt-2">{book.short_description}</p>}
-                        <div className="flex gap-2 mt-4">
-                          <button
-                            onClick={() => {
-                              setEditingBook(book)
-                              setBookFormData({
-                                title: book.title,
-                                author: book.author || '',
-                                year: book.year || '',
-                                short_description: book.short_description || '',
-                                long_description: book.long_description || ''
-                              })
-                              setShowCreateBookModal(true)
-                            }}
-                            className="flex-1 text-sm px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded transition"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBook(book.id, book.shelf_id || null)}
-                            className="flex-1 text-sm px-3 py-2 bg-red-100 text-red-700 hover:bg-red-200 rounded transition"
-                          >
-                            Delete
-                          </button>
+                      <div key={book.id} className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500 hover:shadow-lg transition flex flex-col h-full">
+                        <div className="flex justify-between items-start gap-3 mb-3">
+                          <div className="flex-1">
+                            <p className="font-bold text-lg text-gray-900">{book.title}</p>
+                          </div>
+                          <div className="flex gap-2 flex-shrink-0">
+                            <button
+                              onClick={() => {
+                                setEditingBook(book)
+                                setBookFormData({
+                                  title: book.title,
+                                  author: book.author || '',
+                                  year: book.year || '',
+                                  short_description: book.short_description || '',
+                                  long_description: book.long_description || ''
+                                })
+                                setShowCreateBookModal(true)
+                              }}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg text-blue-600 hover:bg-blue-50 transition"
+                              title="Edit book"
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              onClick={() => handleDeleteBook(book.id, book.shelf_id || null)}
+                              className="w-10 h-10 flex items-center justify-center rounded-lg text-red-600 hover:bg-red-50 transition"
+                              title="Delete book"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+                        <div className="space-y-1 mb-3">
+                          <p className="text-sm text-gray-600 flex items-center gap-2">
+                            <img src="/feather-pen.png" alt="Author" className="w-4 h-4" />
+                            <span>{book.author || '-'}</span>
+                          </p>
+                          <p className="text-sm text-gray-600 flex items-center gap-2">
+                            <img src="/calendar.png" alt="Date" className="w-4 h-4" />
+                            <span>{book.year || '-'}</span>
+                          </p>
+                        </div>
+                        <div className="border-t border-gray-200 pt-2 mt-auto">
+                          <p className="text-xs text-gray-700">{book.short_description || ''}</p>
                         </div>
                       </div>
                     ))}
@@ -2623,10 +3986,14 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 py-4">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => setActiveMainTab('dashboard')}
+                onClick={() => {
+                  setActiveMainTab('dashboard')
+                  updateUrl('dashboard')
+                }}
                 className="text-blue-600 hover:text-blue-700 font-medium"
+                title="Go back to dashboard"
               >
-                ← Back to Dashboard
+                🏠
               </button>
               <h1 className="text-3xl font-bold text-gray-900">👥 Manage Users</h1>
               <button
@@ -2732,7 +4099,7 @@ export default function App() {
 
       {/* Global User Modal */}
       {showCreateUserModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 top-0 left-0 right-0 bottom-0" onClick={() => setShowCreateUserModal(false)}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]" onClick={() => setShowCreateUserModal(false)}>
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold">{editingUser ? 'Edit User' : 'Add New User'}</h2>
@@ -2822,3 +4189,4 @@ export default function App() {
     </>
   )
 }
+

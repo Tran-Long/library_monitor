@@ -40,6 +40,14 @@ def create_library(request, payload: LibraryCreateSchema):
     return library
 
 
+@router.post("/libraries/reorder/")
+def reorder_libraries(request, payload: List[ReorderSchema]):
+    """Reorder libraries."""
+    for item in payload:
+        Library.objects.filter(id=item.id).update(order=item.order)
+    return {"message": "Libraries reordered successfully"}
+
+
 @router.get("/libraries/{library_id}/", response=LibrarySchema)
 def get_library(request, library_id: int):
     """Get a specific library."""
@@ -75,14 +83,6 @@ def delete_library(request, library_id: int):
     return {"message": "Library deleted successfully"}
 
 
-@router.post("/libraries/reorder/")
-def reorder_libraries(request, payload: List[ReorderSchema]):
-    """Reorder libraries."""
-    for item in payload:
-        Library.objects.filter(id=item.id).update(order=item.order)
-    return {"message": "Libraries reordered successfully"}
-
-
 @router.get("/libraries/{library_id}/bookshelves/", response=List[BookshelfSchema])
 def list_library_bookshelves(request, library_id: int):
     """List all bookshelves for a specific library."""
@@ -106,7 +106,7 @@ def create_library_bookshelf(request, library_id: int, payload: BookshelfCreateS
 @router.get("/bookshelves/", response=List[BookshelfSchema])
 def list_bookshelves(request, library_id: int = Query(None)):
     """List all bookshelves, optionally filtered by library."""
-    bookshelves = Bookshelf.objects.all()
+    bookshelves = Bookshelf.objects.all().order_by('library_id', 'order')
     if library_id:
         bookshelves = bookshelves.filter(library_id=library_id)
     return bookshelves
@@ -117,6 +117,14 @@ def create_bookshelf(request, payload: BookshelfCreateSchema):
     """Create a new bookshelf."""
     bookshelf = Bookshelf.objects.create(**payload.dict())
     return bookshelf
+
+
+@router.post("/bookshelves/reorder/")
+def reorder_bookshelves(request, payload: List[ReorderSchema]):
+    """Reorder bookshelves."""
+    for item in payload:
+        Bookshelf.objects.filter(id=item.id).update(order=item.order)
+    return {"message": "Bookshelves reordered successfully"}
 
 
 @router.get("/bookshelves/{bookshelf_id}/", response=BookshelfSchema)
@@ -154,14 +162,6 @@ def delete_bookshelf(request, bookshelf_id: int):
     return {"message": "Bookshelf deleted successfully"}
 
 
-@router.post("/bookshelves/reorder/")
-def reorder_bookshelves(request, payload: List[ReorderSchema]):
-    """Reorder bookshelves."""
-    for item in payload:
-        Bookshelf.objects.filter(id=item.id).update(order=item.order)
-    return {"message": "Bookshelves reordered successfully"}
-
-
 # ============= NESTED SHELF ENDPOINTS =============
 
 @router.get("/bookshelves/{bookshelf_id}/shelves/", response=List[ShelfSchema])
@@ -189,10 +189,17 @@ def create_bookshelf_shelf(request, bookshelf_id: int, payload: ShelfCreateSchem
 @router.get("/shelves/", response=List[ShelfSchema])
 def list_shelves(request, bookshelf_id: int = Query(None)):
     """List all shelves, optionally filtered by bookshelf."""
-    shelves = Shelf.objects.all()
+    shelves = Shelf.objects.all().order_by('bookshelf_id', 'order')
     if bookshelf_id:
         shelves = shelves.filter(bookshelf_id=bookshelf_id)
     return shelves
+
+
+@router.post("/shelves/", response=ShelfSchema)
+def create_shelf(request, payload: ShelfCreateSchema):
+    """Create a new shelf."""
+    shelf = Shelf.objects.create(**payload.dict())
+    return shelf
 
 
 @router.post("/shelves/reorder/")
@@ -279,7 +286,11 @@ def list_storage_books(request):
 @router.post("/books/", response=BookSchema)
 def create_book(request, payload: BookCreateSchema):
     """Create a new book."""
-    book = Book.objects.create(**payload.dict())
+    data = payload.dict(exclude_none=True)
+    # Set status based on shelf_id if not explicitly provided
+    if 'status' not in data or data['status'] is None:
+        data['status'] = 'library' if data.get('shelf_id') else 'storage'
+    book = Book.objects.create(**data)
     return book
 
 
@@ -304,8 +315,15 @@ def get_book(request, book_id: int):
 def update_book(request, book_id: int, payload: BookCreateSchema):
     """Update a book."""
     book = get_object_or_404(Book, id=book_id)
-    for attr, value in payload.dict().items():
-        setattr(book, attr, value)
+    data = payload.dict(exclude_none=True)
+    
+    for attr, value in data.items():
+        if attr == 'shelf_id':
+            # Map shelf_id to shelf for the model
+            setattr(book, 'shelf_id', value)
+        else:
+            setattr(book, attr, value)
+    
     book.save()
     return book
 
@@ -475,3 +493,65 @@ def return_book(request, borrowing_id: int):
     book.is_available = True
     book.save()
     return {"message": "Book returned successfully", "borrowing": BorrowingSchema.from_orm(borrowing)}
+
+
+# ============= BOOK BORROW ENDPOINTS (with User) =============
+
+@router.post("/books/{book_id}/borrow/{user_id}/")
+def borrow_book(request, book_id: int, user_id: int):
+    """Borrow a book for a user."""
+    from django.utils import timezone
+    book = get_object_or_404(Book, id=book_id)
+    user = get_object_or_404(User, id=user_id)
+    
+    # Update book status to borrowed
+    book.status = 'borrowed'
+    book.save()
+    
+    return {
+        "message": f"Book '{book.title}' borrowed by {user.full_name}",
+        "book": BookSchema.from_orm(book),
+        "user_id": user_id,
+        "borrow_date": timezone.now().isoformat(),
+    }
+
+
+@router.post("/books/{book_id}/return/")
+def return_book_simple(request, book_id: int):
+    """Return a borrowed book to storage."""
+    book = get_object_or_404(Book, id=book_id)
+    
+    # Update book status back to storage
+    book.status = 'storage'
+    book.shelf_id = None
+    book.save()
+    
+    return {
+        "message": f"Book '{book.title}' returned to storage",
+        "book": BookSchema.from_orm(book),
+    }
+
+
+@router.get("/books/{book_id}/borrowing-info/")
+def get_book_borrowing_info(request, book_id: int):
+    """Get borrowing information for a book."""
+    book = get_object_or_404(Book, id=book_id)
+    
+    # Find active borrowing for this book
+    active_borrowing = None
+    active_user = None
+    
+    if book.status == 'borrowed':
+        # In a real app, you'd have a field tracking who borrowed it
+        # For now, we'll just indicate it's borrowed
+        active_borrowing = {
+            "book_id": book.id,
+            "status": "borrowed",
+            "borrowed_at": book.updated_at,
+        }
+    
+    return {
+        "book_id": book.id,
+        "status": book.status,
+        "borrowing": active_borrowing,
+    }

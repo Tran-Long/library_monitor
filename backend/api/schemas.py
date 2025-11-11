@@ -98,7 +98,10 @@ class BookSchema(Schema):
     year: Optional[int]
     short_description: str = ""
     long_description: str = ""
-    status: str = "storage"
+    status: str
+    
+    class Config:
+        from_attributes = True
 
 
 class BookCreateSchema(Schema):
@@ -108,7 +111,8 @@ class BookCreateSchema(Schema):
     year: Optional[int] = None
     short_description: str = ""
     long_description: str = ""
-    status: str = "storage"
+    shelf_id: Optional[int] = None
+    status: Optional[str] = None
 
 
 class BookMoveSchema(Schema):

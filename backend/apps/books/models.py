@@ -25,5 +25,12 @@ class Book(models.Model):
     class Meta:
         ordering = ['-created_at', 'title']
     
+    def save(self, *args, **kwargs):
+        """Override save to automatically set status based on shelf_id."""
+        # If status is not 'borrowed', determine it based on shelf
+        if self.status != 'borrowed':
+            self.status = 'library' if self.shelf_id else 'storage'
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         return f"{self.title} by {self.author}"

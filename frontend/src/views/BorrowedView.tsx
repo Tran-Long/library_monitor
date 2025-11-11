@@ -14,8 +14,8 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({ books, users, onBack
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-          <button onClick={onBackClick} className="text-blue-600 hover:text-blue-700 font-medium">
-            ← Back to Dashboard
+          <button onClick={onBackClick} className="text-blue-600 hover:text-blue-700 font-medium" title="Go back to dashboard">
+            🏠
           </button>
           <h1 className="text-3xl font-bold text-gray-900">✨ Borrowed</h1>
         </div>

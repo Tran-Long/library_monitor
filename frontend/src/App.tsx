@@ -9,7 +9,7 @@ import { useBorrowings } from '@/hooks'
 import { DraggableLibraryCard, DraggableBookshelfCard, DraggableShelfCard } from '@/components/draggable'
 import { BookDetailModal, BorrowBookModal, BorrowConfirmationModal, ReturnConfirmationModal, MoveBookModal } from '@/components/modals'
 // Import extracted views (Phase 3)
-import { StorageView, BorrowedView, ManageUsersView, ManageBooksView, LibrariesView } from '@/views'
+import { BorrowedView, ManageUsersView, ManageBooksView, LibrariesView } from '@/views'
 
 /**
  * Format a date string (YYYY-MM-DD) as dd/mm/yyyy
@@ -62,7 +62,7 @@ export default function App() {
   const [users, setUsers] = useState<User[]>([])
   const [shelfDetailPopup, setShelfDetailPopup] = useState<Shelf | null>(null)
   const [shelfColumnsView, setShelfColumnsView] = useState<1 | 2>(2)
-  const [activeMainTab, setActiveMainTab] = useState<'dashboard' | 'libraries' | 'storage' | 'borrowed' | 'manage-books' | 'manage-users'>('dashboard')
+  const [activeMainTab, setActiveMainTab] = useState<'dashboard' | 'libraries' | 'borrowed' | 'manage-books' | 'manage-users'>('dashboard')
   
   // Modal states
   const [showCreateLibraryModal, setShowCreateLibraryModal] = useState(false)
@@ -161,6 +161,104 @@ export default function App() {
   // Variable to hold the main content that will be rendered at the bottom
   let mainContent: React.ReactNode = null
 
+  // Helper function to restore state from path string
+  const restoreStateFromPath = async (path: string, librariesData: Library[]) => {
+    // Close all modals when restoring state from URL
+    closeAllModals()
+    
+    const parts = path.split('/').filter(p => p)
+
+    if (parts.length === 0) {
+      // Root path - dashboard
+      setActiveMainTab('dashboard')
+      setSelectedLibrary(null)
+      setSelectedBookshelf(null)
+      return
+    }
+
+    const tab = parts[0] as 'dashboard' | 'libraries' | 'borrowed' | 'manage-books' | 'manage-users'
+    const libraryId = parts[1] ? parseInt(parts[1]) : undefined
+    const bookshelfId = parts[2] ? parseInt(parts[2]) : undefined
+
+    setActiveMainTab(tab)
+
+    // Handle libraries view
+    if (tab === 'libraries') {
+      if (!libraryId) {
+        // Viewing all libraries - clear selections
+        setSelectedLibrary(null)
+        setSelectedBookshelf(null)
+        setBookshelves([])
+        setShelves([])
+        return
+      }
+      // Restore library/bookshelf state if specific library selected
+      if (librariesData.length > 0) {
+        const lib = librariesData.find((l: Library) => l.id === libraryId)
+        if (lib) {
+          setSelectedLibrary(lib)
+          setExpandedBookshelves((prev: Set<number>) => {
+            const newExpanded = new Set(prev)
+            newExpanded.add(libraryId)
+            return newExpanded
+          })
+          
+          try {
+            // Load bookshelves for this library
+            const bsResponse = await fetch(`/api/libraries/${libraryId}/bookshelves/`)
+            if (!bsResponse.ok) throw new Error(`Failed to load bookshelves: ${bsResponse.status}`)
+            const bsData = await bsResponse.json()
+            setBookshelves(bsData)
+            
+            // Restore bookshelf if needed
+            if (bookshelfId) {
+              const bs = bsData.find((b: Bookshelf) => b.id === bookshelfId)
+              if (bs) {
+                setSelectedBookshelf(bs)
+                setExpandedBookshelves((prev: Set<number>) => {
+                  const newExpanded = new Set(prev)
+                  newExpanded.add(bookshelfId)
+                  return newExpanded
+                })
+                
+                // Load shelves for this bookshelf
+                const shResponse = await fetch(`/api/bookshelves/${bookshelfId}/shelves/`)
+                if (!shResponse.ok) throw new Error(`Failed to load shelves: ${shResponse.status}`)
+                const shData = await shResponse.json()
+                setShelves(shData)
+              } else {
+                setSelectedBookshelf(null)
+                setShelves([])
+              }
+            } else {
+              setSelectedBookshelf(null)
+              setShelves([])
+            }
+          } catch (err) {
+            console.error('Failed to restore from URL:', err)
+            // Fallback: stay in libraries view but clear selections
+            setSelectedLibrary(null)
+            setSelectedBookshelf(null)
+            setBookshelves([])
+            setShelves([])
+          }
+        } else {
+          // Library ID in URL but not found in data
+          setSelectedLibrary(null)
+          setSelectedBookshelf(null)
+          setBookshelves([])
+          setShelves([])
+        }
+      }
+    } else if (tab !== 'libraries') {
+      // Not in libraries view, clear library/bookshelf selections
+      setSelectedLibrary(null)
+      setSelectedBookshelf(null)
+      setBookshelves([])
+      setShelves([])
+    }
+  }
+
   // Helper function to update URL
   const updateUrl = (tab: string, libraryId?: number, bookshelfId?: number) => {
     let path = '/'
@@ -174,6 +272,44 @@ export default function App() {
       libraryId,
       bookshelfId,
     }, '', path)
+  }
+
+  // Helper function to close all modals and clear modal-related state
+  const closeAllModals = () => {
+    // Hide all modals
+    setShowCreateLibraryModal(false)
+    setShowCreateBookshelfModal(false)
+    setShowCreateShelfModal(false)
+    setShowCreateBookModal(false)
+    setShowCreateUserModal(false)
+    setShowStorageModal(false)
+    setShowSelectStorageBooksModal(false)
+    setShowBorrowModal(false)
+    setShowBorrowConfirmation(false)
+    setShowReturnConfirmation(false)
+    setShowMoveBookModal(false)
+    
+    // Clear modal-related data
+    setShelfDetailPopup(null)
+    setSelectedShelfForAddingBooks(null)
+    setSelectedShelfForBook(null)
+    setEditingLibrary(null)
+    setEditingBookshelf(null)
+    setEditingShelf(null)
+    setEditingBook(null)
+    setEditingUser(null)
+    setDetailPopup(null)
+    setBookToBorrow(null)
+    setSelectedUserForConfirmation(null)
+    setBorrowingToReturn(null)
+    setOnReturnCompleteCallback(null)
+    setBookToMove(null)
+    setSelectedShelfForMove(null)
+    setSelectedUserForBorrow('')
+    setSelectedLibraryForBook('')
+    setSelectedBookshelfForBook('')
+    setSelectedShelfIdForBook('')
+    setPlacementType('storage')
   }
 
   // Initial load and history listener
@@ -194,88 +330,11 @@ export default function App() {
     }
   }, [activeMainTab, fetchBorrowings])
 
-  // Restore state from URL after data loads
+  // Restore state from URL after data loads (on initial page load and when libraries change)
   useEffect(() => {
     if (libraries.length > 0) {
-      const restoreFromUrl = async () => {
-        const path = window.location.pathname
-        const parts = path.split('/').filter(p => p)
-
-        if (parts.length === 0) {
-          // Root path - dashboard
-          setActiveMainTab('dashboard')
-          setSelectedLibrary(null)
-          setSelectedBookshelf(null)
-          return
-        }
-
-        const tab = parts[0] as 'dashboard' | 'libraries' | 'storage' | 'borrowed' | 'manage-books' | 'manage-users'
-        const libraryId = parts[1] ? parseInt(parts[1]) : undefined
-        const bookshelfId = parts[2] ? parseInt(parts[2]) : undefined
-
-        setActiveMainTab(tab)
-
-        // Restore library if needed
-        if (tab === 'libraries') {
-          if (libraryId) {
-            const lib = libraries.find((l: Library) => l.id === libraryId)
-            if (lib) {
-              setSelectedLibrary(lib)
-              // Expand the library in the nav tree
-              setExpandedBookshelves((prev: Set<number>) => {
-                const newExpanded = new Set(prev)
-                newExpanded.add(libraryId)
-                return newExpanded
-              })
-              // Load bookshelves for this library
-              try {
-                const response = await fetch(`/api/libraries/${libraryId}/bookshelves/`)
-                if (response.ok) {
-                  const bsData = await response.json()
-                  setBookshelves(bsData)
-                  
-                  // Restore bookshelf if needed
-                  if (bookshelfId) {
-                    const bs = bsData.find((b: Bookshelf) => b.id === bookshelfId)
-                    if (bs) {
-                      setSelectedBookshelf(bs)
-                      // Expand the bookshelf in the nav tree
-                      setExpandedBookshelves((prev: Set<number>) => {
-                        const newExpanded = new Set(prev)
-                        newExpanded.add(bookshelfId)
-                        return newExpanded
-                      })
-                      // Load shelves for this bookshelf
-                      const shResponse = await fetch(`/api/bookshelves/${bookshelfId}/shelves/`)
-                      if (shResponse.ok) {
-                        const shData = await shResponse.json()
-                        setShelves(shData)
-                      }
-                    } else {
-                      // Bookshelf ID in URL but not found, clear selection
-                      setSelectedBookshelf(null)
-                      setShelves([])
-                    }
-                  } else {
-                    // No bookshelf ID in URL, clear selection
-                    setSelectedBookshelf(null)
-                    setShelves([])
-                  }
-                }
-              } catch (err) {
-                console.error('Failed to restore bookshelves/shelves:', err)
-              }
-            }
-          } else {
-            // No library selected in libraries view
-            setSelectedLibrary(null)
-            setSelectedBookshelf(null)
-            setBookshelves([])
-            setShelves([])
-          }
-        }
-      }
-      restoreFromUrl()
+      const path = window.location.pathname
+      restoreStateFromPath(path, libraries)
     }
   }, [libraries])
 
@@ -288,75 +347,10 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       console.log('popstate event fired, path:', window.location.pathname)
-      const path = window.location.pathname
-      const parts = path.split('/').filter(p => p)
-
-      if (parts.length === 0) {
-        // Root path - dashboard
-        console.log('Popstate: Setting to dashboard')
-        setActiveMainTab('dashboard')
-        setSelectedLibrary(null)
-        setSelectedBookshelf(null)
-        return
-      }
-
-      const tab = parts[0] as 'dashboard' | 'libraries' | 'storage' | 'borrowed' | 'manage-books' | 'manage-users'
-      const libraryId = parts[1] ? parseInt(parts[1]) : undefined
-      const bookshelfId = parts[2] ? parseInt(parts[2]) : undefined
-
-      console.log('Popstate: Restoring tab:', tab)
-      setActiveMainTab(tab)
-
-      // Restore library selection if in libraries view
-      if (tab === 'libraries' && libraryId && libraries.length > 0) {
-        console.log('Popstate: Restoring library', libraryId)
-        const lib = libraries.find((l: Library) => l.id === libraryId)
-        if (lib) {
-          setSelectedLibrary(lib)
-          setExpandedBookshelves((prev: Set<number>) => {
-            const newExpanded = new Set(prev)
-            newExpanded.add(libraryId)
-            return newExpanded
-          })
-          
-          // Load bookshelves asynchronously
-          fetch(`/api/libraries/${libraryId}/bookshelves/`)
-            .then(r => r.json())
-            .then(bsData => {
-              setBookshelves(bsData)
-              
-              // Restore bookshelf if needed
-              if (bookshelfId) {
-                const bs = bsData.find((b: Bookshelf) => b.id === bookshelfId)
-                if (bs) {
-                  setSelectedBookshelf(bs)
-                  setExpandedBookshelves((prev: Set<number>) => {
-                    const newExpanded = new Set(prev)
-                    newExpanded.add(bookshelfId)
-                    return newExpanded
-                  })
-                  
-                  // Load shelves
-                  fetch(`/api/bookshelves/${bookshelfId}/shelves/`)
-                    .then(r => r.json())
-                    .then(shData => setShelves(shData))
-                    .catch(err => console.error('Failed to load shelves:', err))
-                } else {
-                  setSelectedBookshelf(null)
-                  setShelves([])
-                }
-              } else {
-                setSelectedBookshelf(null)
-                setShelves([])
-              }
-            })
-            .catch(err => console.error('Failed to load bookshelves:', err))
-        }
-      } else if (tab !== 'libraries') {
-        // Not in libraries view, clear library selection
-        setSelectedLibrary(null)
-        setSelectedBookshelf(null)
-      }
+      // Close all modals when navigating back/forward
+      closeAllModals()
+      // Restore state from URL
+      restoreStateFromPath(window.location.pathname, libraries)
     }
 
     window.addEventListener('popstate', handlePopState)
@@ -502,6 +496,7 @@ export default function App() {
   }
 
   const handleSelectLibrary = async (library: Library) => {
+    closeAllModals()
     setSelectedLibrary(library)
     setSelectedBookshelf(null)
     // Expand the library in the navigation tree
@@ -510,7 +505,7 @@ export default function App() {
       newExpanded.add(library.id)
       return newExpanded
     })
-    // Don't call updateUrl here - let the caller handle it
+    updateUrl('libraries', library.id)
     await loadBookshelves(library.id)
   }
 
@@ -615,6 +610,7 @@ export default function App() {
   }
 
   const handleSelectBookshelf = async (bookshelf: Bookshelf) => {
+    closeAllModals()
     setSelectedBookshelf(bookshelf)
     if (selectedLibrary) {
       // Expand both the library and bookshelf in the tree
@@ -624,7 +620,7 @@ export default function App() {
         newExpanded.add(bookshelf.id)
         return newExpanded
       })
-      // Don't call updateUrl here - let the caller handle it
+      updateUrl('libraries', selectedLibrary.id, bookshelf.id)
     }
     await loadShelves(bookshelf.id)
   }
@@ -2332,7 +2328,6 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 py-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2"><img src="/library.png" alt="Library" className="w-8 h-8" /> Library Monitor</h1>
-              <p className="text-gray-600 mt-1">Manage your library collection efficiently</p>
             </div>
           </div>
         </header>
@@ -2343,10 +2338,6 @@ export default function App() {
             shelves={shelves}
             selectedBookshelf={selectedBookshelf}
             libraries={libraries}
-            onStorageClick={() => {
-              setActiveMainTab('storage')
-              updateUrl('storage')
-            }}
             onLibraryClick={() => {
               setActiveMainTab('libraries')
               updateUrl('libraries')
@@ -2366,51 +2357,6 @@ export default function App() {
           />
         </main>
       </div>
-    )
-  }
-
-  // Storage View - Extract to StorageView component
-  if (activeMainTab === 'storage') {
-    mainContent = (
-      <StorageView
-        books={books}
-        libraries={libraries}
-        allBookshelves={allBookshelves}
-        allShelves={allShelves}
-        bookToBorrow={bookToBorrow}
-        bookToMove={bookToMove}
-        detailPopup={detailPopup}
-        onSetBookToBorrow={setBookToBorrow}
-        onSetBookToMove={setBookToMove}
-        onSetShowBorrowModal={setShowBorrowModal}
-        onSetShowMoveBookModal={setShowMoveBookModal}
-        onSetDetailPopup={setDetailPopup}
-        onMoveBook={async (bookId: number, shelfId: number) => {
-          const response = await fetch(`/api/books/${bookId}/move/`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              shelf_id: shelfId,
-              status: 'library'
-            })
-          })
-          if (!response.ok) throw new Error(`API error: ${response.status}`)
-          await loadAllBooks()
-          await loadStorageBooks()
-          // Reload all shelves
-          const allShResponse = await fetch('/api/shelves/')
-          if (!allShResponse.ok) throw new Error(`Failed to load shelves`)
-          const allShData = await allShResponse.json()
-          setAllShelves(allShData)
-        }}
-        onNavigateBack={() => {
-          setActiveMainTab('dashboard')
-          updateUrl('dashboard')
-        }}
-        onSetSelectedLibraryForBook={setSelectedLibraryForBook}
-        onSetSelectedBookshelfForBook={setSelectedBookshelfForBook}
-        onSetSelectedShelfForMove={setSelectedShelfForMove}
-      />
     )
   }
 

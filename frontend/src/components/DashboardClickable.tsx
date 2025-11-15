@@ -7,7 +7,6 @@ interface DashboardClickableProps {
   shelves: Shelf[]
   selectedBookshelf: Bookshelf | null
   libraries?: Library[]
-  onStorageClick: () => void
   onLibraryClick: () => void
   onBorrowedClick: () => void
   onManageBooks: () => void
@@ -19,7 +18,6 @@ export default function DashboardClickable({
   shelves: _shelves,
   selectedBookshelf: _selectedBookshelf,
   libraries = [],
-  onStorageClick,
   onLibraryClick,
   onBorrowedClick,
   onManageBooks,
@@ -40,114 +38,120 @@ export default function DashboardClickable({
     }
   }
 
-  const storageBooks = books.filter(b => (b.shelf_id === null && b.status === 'storage') || (b.shelf_id === null && !b.status))
   const libraryBooks = books.filter(b => b.shelf_id !== null && b.status !== 'borrowed')
-  
-  // Get active borrowings
-  const currentBorrowings = borrowings.filter(b => !b.return_date)
-
-  const StatCard = ({
-    title,
-    icon,
-    color,
-    onClick,
-    children,
-  }: {
-    title: string
-    icon?: string
-    color: string
-    onClick: () => void
-    children: React.ReactNode
-  }) => (
-    <button
-      onClick={onClick}
-      className={`${color} rounded-lg shadow-md p-6 text-white hover:shadow-lg hover:scale-105 transition transform cursor-pointer text-left`}
-    >
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <h3 className="text-2xl font-bold">{title}</h3>
-        {icon && <span className="text-3xl flex-shrink-0">{icon}</span>}
-      </div>
-      {children}
-      <p className="text-sm opacity-90 mt-4">Click to view</p>
-    </button>
-  )
+  const currentBorrowings = borrowings.filter((b: any) => !b.return_date)
 
   return (
-    <div className="space-y-8">
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Storage Card */}
-        <button
-          onClick={onStorageClick}
-          className="bg-blue-600 hover:bg-blue-700 rounded-lg shadow-md p-6 text-white hover:shadow-lg hover:scale-105 transition transform cursor-pointer text-left"
-        >
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <h3 className="text-2xl font-bold">Storage</h3>
-            <img src="/box.png" alt="Storage" className="w-12 h-12 flex-shrink-0" />
-          </div>
-          <div className="text-5xl font-bold mb-2">{storageBooks.length}</div>
-          <p className="text-sm opacity-90">books in storage</p>
-          <p className="text-sm opacity-90 mt-4">Click to view</p>
-        </button>
+    <div className="space-y-12">
 
-        {/* Library Card */}
+      {/* Main Action Cards - Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Libraries Card */}
         <button
           onClick={onLibraryClick}
-          className="bg-green-600 hover:bg-green-700 rounded-lg shadow-md p-6 text-white hover:shadow-lg hover:scale-105 transition transform cursor-pointer text-left"
+          className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden h-40 cursor-pointer"
         >
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <h3 className="text-2xl font-bold">Library</h3>
-            <img src="/library.png" alt="Library" className="w-12 h-12 flex-shrink-0" />
-          </div>
-          <div className="space-y-2">
-            <div>
-              <p className="text-sm opacity-90">Libraries</p>
-              <div className="text-3xl font-bold">{libraries.length}</div>
+          {/* Gradient background on hover */}
+          <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-green-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          
+          {/* Content */}
+          <div className="relative h-full p-8 flex flex-col justify-between group-hover:text-white transition-colors duration-300">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 group-hover:text-green-100 transition-colors">Your Libraries</p>
+                <h3 className="text-3xl font-bold text-gray-900 group-hover:text-white mt-1 transition-colors">{libraries.length}</h3>
+              </div>
+              <img src="/library.png" alt="Library" className="w-12 h-12 opacity-75 group-hover:opacity-100 transition-opacity" />
             </div>
+            
             <div>
-              <p className="text-sm opacity-90">Books</p>
-              <div className="text-3xl font-bold">{libraryBooks.length}</div>
+              <p className="text-lg font-semibold text-gray-700 group-hover:text-white transition-colors mb-1">{libraryBooks.length} Books</p>
+              <p className="text-sm text-gray-500 group-hover:text-green-100 transition-colors">Browse & manage your collections</p>
             </div>
           </div>
-          <p className="text-sm opacity-90 mt-4">Click to view</p>
         </button>
 
-        {/* Borrowed Card */}
+        {/* Borrowing Card */}
         <button
           onClick={onBorrowedClick}
-          className="bg-purple-600 hover:bg-purple-700 rounded-lg shadow-md p-6 text-white hover:shadow-lg hover:scale-105 transition transform cursor-pointer text-left"
+          className="group relative bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden h-40 cursor-pointer"
         >
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <h3 className="text-2xl font-bold">Borrowing Sessions</h3>
-            <img src="/borrow.png" alt="Borrowed" className="w-12 h-12 flex-shrink-0" />
+          {/* Gradient background on hover */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-400 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          
+          {/* Content */}
+          <div className="relative h-full p-8 flex flex-col justify-between group-hover:text-white transition-colors duration-300">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-semibold text-gray-500 group-hover:text-purple-100 transition-colors">Active Borrowings</p>
+                <h3 className="text-3xl font-bold text-gray-900 group-hover:text-white mt-1 transition-colors">{currentBorrowings.length}</h3>
+              </div>
+              <div className="text-4xl opacity-75 group-hover:opacity-100 transition-opacity">📚</div>
+            </div>
+            
+            <div>
+              <p className="text-sm text-gray-500 group-hover:text-purple-100 transition-colors">Books currently out</p>
+              <p className="text-xs text-gray-400 group-hover:text-purple-100 transition-colors">Manage borrowing sessions</p>
+            </div>
           </div>
-          <div className="text-5xl font-bold mb-2">{currentBorrowings.length}</div>
-          <p className="text-sm opacity-90">books currently borrowing</p>
-          <p className="text-sm opacity-90 mt-4">Click to view</p>
         </button>
       </div>
 
-      {/* Manage Books and Manage Users Buttons */}
-      <div className="flex justify-center gap-4">
-        <button
-          onClick={() => {
-            console.log('Manage Books clicked')
-            onManageBooks()
-          }}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-semibold inline-flex items-center gap-2 transition shadow-md hover:shadow-lg"
-        >
-          📚 Manage Books
-        </button>
-        <button
-          onClick={() => {
-            console.log('Manage Users clicked')
-            onManageUsers()
-          }}
-          className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 py-3 rounded-lg font-semibold inline-flex items-center gap-2 transition shadow-md hover:shadow-lg"
-        >
-          <img src="/group.png" alt="Manage Users" className="w-5 h-5" />
-          Manage Users
-        </button>
+      {/* Management Section */}
+      <div className="space-y-4">
+        <h4 className="text-sm font-bold text-gray-600 uppercase tracking-wider px-2">Management Tools</h4>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Manage Books Card */}
+          <button
+            onClick={onManageBooks}
+            className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-6 text-left border border-gray-100 hover:border-indigo-300"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="text-3xl">📖</div>
+              <div className="h-8 w-8 rounded-lg bg-indigo-100 group-hover:bg-indigo-600 flex items-center justify-center transition-colors">
+                <svg className="w-4 h-4 text-indigo-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+            <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">Manage Books</h3>
+            <p className="text-sm text-gray-500 mt-1">Add, edit, or remove books from your library</p>
+          </button>
+
+          {/* Manage Users Card */}
+          <button
+            onClick={onManageUsers}
+            className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 p-6 text-left border border-gray-100 hover:border-cyan-300"
+          >
+            <div className="flex items-start justify-between mb-3">
+              <div className="text-3xl">👥</div>
+              <div className="h-8 w-8 rounded-lg bg-cyan-100 group-hover:bg-cyan-600 flex items-center justify-center transition-colors">
+                <svg className="w-4 h-4 text-cyan-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </div>
+            <h3 className="font-semibold text-gray-900 group-hover:text-cyan-600 transition-colors">Manage Users</h3>
+            <p className="text-sm text-gray-500 mt-1">Create and manage user accounts and permissions</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Quick Stats Footer */}
+      <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100">
+        <div className="text-center">
+          <p className="text-2xl font-bold text-gray-900">{books.length}</p>
+          <p className="text-xs text-gray-500 mt-1">Total Books</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-bold text-gray-900">{libraries.length}</p>
+          <p className="text-xs text-gray-500 mt-1">Libraries</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-bold text-gray-900">{currentBorrowings.length}</p>
+          <p className="text-xs text-gray-500 mt-1">Out Now</p>
+        </div>
       </div>
     </div>
   )

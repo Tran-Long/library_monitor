@@ -38,7 +38,6 @@ class BookshelfSchema(Schema):
     name: str
     short_description: str
     long_description: str
-    description: str
     location: str
     order: int
     created_at: datetime

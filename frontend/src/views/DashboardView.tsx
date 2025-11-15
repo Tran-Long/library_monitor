@@ -7,7 +7,6 @@ interface DashboardViewProps {
   shelves: Shelf[]
   selectedBookshelf: Bookshelf | null
   libraries: Library[]
-  onStorageClick: () => void
   onLibraryClick: () => void
   onBorrowedClick: () => void
   onManageBooks: () => void
@@ -20,12 +19,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   shelves,
   selectedBookshelf,
   libraries,
-  onStorageClick,
   onLibraryClick,
   onBorrowedClick,
   onManageBooks,
   onManageUsers,
-  onShowCreateBookModal,
 }) => {
   return (
     <div className="min-h-screen bg-gray-100">
@@ -44,7 +41,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           shelves={shelves}
           selectedBookshelf={selectedBookshelf}
           libraries={libraries}
-          onStorageClick={onStorageClick}
           onLibraryClick={onLibraryClick}
           onBorrowedClick={onBorrowedClick}
           onManageBooks={onManageBooks}

@@ -177,7 +177,7 @@ def create_bookshelf_shelf(request, bookshelf_id: int, payload: ShelfCreateSchem
     data['bookshelf_id'] = bookshelf_id
     # Auto-assign order as the next number in sequence
     max_order = Shelf.objects.filter(bookshelf_id=bookshelf_id).aggregate(models.Max('order'))['order__max']
-    data['order'] = (max_order or -1) + 1
+    data['order'] = (max_order if max_order is not None else -1) + 1
     shelf = Shelf.objects.create(**data)
     return shelf
 
@@ -196,7 +196,11 @@ def list_shelves(request, bookshelf_id: int = Query(None)):
 @router.post("/shelves/", response=ShelfSchema)
 def create_shelf(request, payload: ShelfCreateSchema):
     """Create a new shelf."""
-    shelf = Shelf.objects.create(**payload.dict())
+    data = payload.dict()
+    # Auto-assign order as the next number in sequence for the bookshelf
+    max_order = Shelf.objects.filter(bookshelf_id=data['bookshelf_id']).aggregate(models.Max('order'))['order__max']
+    data['order'] = (max_order if max_order is not None else -1) + 1
+    shelf = Shelf.objects.create(**data)
     return shelf
 
 
@@ -206,17 +210,6 @@ def reorder_shelves(request, payload: List[ReorderSchema]):
     for item in payload:
         Shelf.objects.filter(id=item.id).update(order=item.order)
     return {"message": "Shelves reordered successfully"}
-
-
-@router.post("/shelves/", response=ShelfSchema)
-def create_shelf(request, payload: ShelfCreateSchema):
-    """Create a new shelf."""
-    data = payload.dict()
-    # Auto-assign order as the next number in sequence for the bookshelf
-    max_order = Shelf.objects.filter(bookshelf_id=data['bookshelf_id']).aggregate(models.Max('order'))['order__max']
-    data['order'] = (max_order or -1) + 1
-    shelf = Shelf.objects.create(**data)
-    return shelf
 
 
 @router.get("/shelves/{shelf_id}/", response=ShelfSchema)

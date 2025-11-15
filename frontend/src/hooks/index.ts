@@ -1,4 +1,5 @@
 export { useLibraries } from './useLibraries'
 export { useBooks } from './useBooks'
 export { useUsers } from './useUsers'
+export { useBorrowings } from './useBorrowings'
 export { useDragAndDrop } from './useDragAndDrop'

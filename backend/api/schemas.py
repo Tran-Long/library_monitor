@@ -25,7 +25,7 @@ class LibraryCreateSchema(Schema):
     short_description: str = ""
     long_description: str = ""
     description: str = ""
-    address: str
+    address: str = ""
     phone: str = ""
     email: str = ""
     order: int = 0
@@ -95,10 +95,13 @@ class BookSchema(Schema):
     shelf_id: Optional[int]
     title: str
     author: str = ""
-    year: Optional[int]
+    year: Optional[date]
     short_description: str = ""
     long_description: str = ""
     status: str
+    borrowed_by_user_id: Optional[int] = None
+    borrowed_by_user_name: Optional[str] = None
+    borrow_date: Optional[datetime] = None
     
     class Config:
         from_attributes = True
@@ -108,7 +111,7 @@ class BookCreateSchema(Schema):
     """Schema for creating Book."""
     title: str
     author: str = ""
-    year: Optional[int] = None
+    year: Optional[date] = None
     short_description: str = ""
     long_description: str = ""
     shelf_id: Optional[int] = None
@@ -149,11 +152,11 @@ class BorrowingSchema(Schema):
     """Schema for Borrowing model."""
     id: int
     book_id: int
-    customer_id: int
+    user_id: Optional[int]
     borrow_date: datetime
-    due_date: date
-    return_date: Optional[date]
+    return_date: Optional[datetime]
     notes: str
+    return_notes: str
     created_at: datetime
     updated_at: datetime
 
@@ -161,8 +164,13 @@ class BorrowingSchema(Schema):
 class BorrowingCreateSchema(Schema):
     """Schema for creating Borrowing."""
     book_id: int
-    customer_id: int
-    due_date: date
+    user_id: Optional[int] = None
+    notes: str = ""
+
+
+class BorrowBookSchema(Schema):
+    """Schema for borrowing a book with custom date."""
+    borrow_time: Optional[datetime] = None
     notes: str = ""
 
 
@@ -172,6 +180,8 @@ class UserSchema(Schema):
     full_name: str
     dob: Optional[date]
     phone: Optional[str]
+    gender: str
+    department: Optional[str]
     short_description: str
     long_description: str
     created_at: datetime
@@ -183,6 +193,8 @@ class UserCreateSchema(Schema):
     full_name: str
     dob: Optional[date] = None
     phone: Optional[str] = None
+    gender: str = "O"
+    department: Optional[str] = None
     short_description: str = ""
     long_description: str = ""
 

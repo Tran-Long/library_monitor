@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import type { Book, Shelf, Bookshelf } from '@/types'
+import type { Book, Shelf, Bookshelf, Borrowing } from '@/types'
+import { borrowingService } from '@/services/api'
 
 interface DashboardProps {
   books: Book[]
@@ -10,10 +11,12 @@ interface DashboardProps {
 
 export default function Dashboard({ books, shelves, selectedBookshelf, onSelectShelf }: DashboardProps) {
   const [stats, setStats] = useState({ storage: 0, library: 0, borrowed: 0, total: 0 })
+  const [borrowings, setBorrowings] = useState<Borrowing[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     loadStats()
+    loadBorrowings()
   }, [books, selectedBookshelf])
 
   const loadStats = async () => {
@@ -29,19 +32,44 @@ export default function Dashboard({ books, shelves, selectedBookshelf, onSelectS
     }
   }
 
+  const loadBorrowings = async () => {
+    try {
+      const response = await borrowingService.getAll()
+      setBorrowings(response.data)
+    } catch (err) {
+      console.error('Failed to load borrowings:', err)
+    }
+  }
+
   const storageBooks = books.filter(b => (b.shelf_id === null && b.status === 'storage') || (b.shelf_id === null && !b.status))
   const libraryBooks = books.filter(b => (b.shelf_id !== null && b.status === 'library') || (b.shelf_id !== null && !b.status))
   const borrowedBooks = books.filter(b => b.status === 'borrowed')
+  // Count current borrowings: books with active borrowing records (no return_date)
+  const currentBorrowings = borrowings.filter(b => !b.return_date)
+  // Get book objects for currently borrowing books
+  const currentlyBorrowingBooks = currentBorrowings
+    .map(borrowing => books.find(b => b.id === borrowing.book_id))
+    .filter((book): book is Book => book !== undefined)
+  // Total borrowing sessions: all borrowing records
+  const totalBorrowingSessions = borrowings.length
 
-  const StatCard = ({ title, count, icon, color, books: cardBooks }: any) => (
+  const StatCard = ({ title, count, icon, color, books: cardBooks, subtitle, subtitleLabel }: any) => (
     <div className={`${color} rounded-lg shadow-md p-6 text-white`}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-bold">{title}</h3>
         <span className="text-4xl">{icon}</span>
       </div>
-      <div className="text-4xl font-bold mb-4">{count}</div>
-      <p className="text-sm opacity-90 mb-4">
-        {count === 1 ? 'item' : 'items'}
+      <div className="mb-4">
+        <div className="text-5xl font-bold mb-2">{count}</div>
+        {subtitle !== undefined && subtitle !== null && (
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="text-2xl font-semibold">{subtitle}</span>
+            <span className="text-xs opacity-75">{subtitleLabel}</span>
+          </div>
+        )}
+      </div>
+      <p className="text-sm opacity-90">
+        {subtitle !== undefined && subtitle !== null ? 'current borrowing' : (count === 1 ? 'item' : 'items')}
       </p>
       {cardBooks.length > 0 && (
         <div className="mt-4 max-h-48 overflow-y-auto bg-black bg-opacity-20 rounded p-3 space-y-2">
@@ -86,10 +114,10 @@ export default function Dashboard({ books, shelves, selectedBookshelf, onSelectS
           />
           <StatCard
             title="Borrowed"
-            count={borrowedBooks.length}
+            count={currentlyBorrowingBooks.length}
             icon="✨"
             color="bg-purple-600"
-            books={borrowedBooks}
+            books={currentlyBorrowingBooks}
           />
         </div>
 

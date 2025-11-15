@@ -1,5 +1,6 @@
-import React from 'react'
-import type { Book, Shelf, Bookshelf, Library } from '@/types'
+import React, { useState, useEffect } from 'react'
+import type { Book, Shelf, Bookshelf, Library, Borrowing } from '@/types'
+import { borrowingService } from '@/services/api'
 
 interface DashboardClickableProps {
   books: Book[]
@@ -24,9 +25,26 @@ export default function DashboardClickable({
   onManageBooks,
   onManageUsers,
 }: DashboardClickableProps) {
+  const [borrowings, setBorrowings] = useState<Borrowing[]>([])
+
+  useEffect(() => {
+    loadBorrowings()
+  }, [books])
+
+  const loadBorrowings = async () => {
+    try {
+      const response = await borrowingService.getAll()
+      setBorrowings(response.data)
+    } catch (err) {
+      console.error('Failed to load borrowings:', err)
+    }
+  }
+
   const storageBooks = books.filter(b => (b.shelf_id === null && b.status === 'storage') || (b.shelf_id === null && !b.status))
-  const libraryBooks = books.filter(b => b.shelf_id !== null)
-  const borrowedBooks = books.filter(b => b.status === 'borrowed')
+  const libraryBooks = books.filter(b => b.shelf_id !== null && b.status !== 'borrowed')
+  
+  // Get active borrowings
+  const currentBorrowings = borrowings.filter(b => !b.return_date)
 
   const StatCard = ({
     title,
@@ -100,11 +118,11 @@ export default function DashboardClickable({
           className="bg-purple-600 hover:bg-purple-700 rounded-lg shadow-md p-6 text-white hover:shadow-lg hover:scale-105 transition transform cursor-pointer text-left"
         >
           <div className="flex items-start justify-between gap-4 mb-4">
-            <h3 className="text-2xl font-bold">Borrowed</h3>
+            <h3 className="text-2xl font-bold">Borrowing Sessions</h3>
             <img src="/borrow.png" alt="Borrowed" className="w-12 h-12 flex-shrink-0" />
           </div>
-          <div className="text-5xl font-bold mb-2">{borrowedBooks.length}</div>
-          <p className="text-sm opacity-90">books borrowed</p>
+          <div className="text-5xl font-bold mb-2">{currentBorrowings.length}</div>
+          <p className="text-sm opacity-90">books currently borrowing</p>
           <p className="text-sm opacity-90 mt-4">Click to view</p>
         </button>
       </div>
@@ -127,7 +145,8 @@ export default function DashboardClickable({
           }}
           className="bg-cyan-600 hover:bg-cyan-700 text-white px-8 py-3 rounded-lg font-semibold inline-flex items-center gap-2 transition shadow-md hover:shadow-lg"
         >
-          👥 Manage Users
+          <img src="/group.png" alt="Manage Users" className="w-5 h-5" />
+          Manage Users
         </button>
       </div>
     </div>

@@ -30,7 +30,6 @@ INSTALLED_APPS = [
     'apps.bookshelves',
     'apps.shelves',
     'apps.books',
-    'apps.customers',
     'apps.borrowings',
     'apps.users',
 ]

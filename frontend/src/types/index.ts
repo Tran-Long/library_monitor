@@ -46,7 +46,7 @@ export interface Book {
   shelf_id: number | null
   title: string
   author: string
-  year: number | null
+  year: string | null  // ISO date string (YYYY-MM-DD)
   short_description: string
   long_description: string
   status?: 'storage' | 'library' | 'borrowed'
@@ -62,6 +62,8 @@ export interface User {
   full_name: string
   dob: string | null
   phone: string | null
+  gender: string
+  department: string | null
   short_description: string
   long_description: string
   created_at: string
@@ -84,11 +86,11 @@ export interface Customer {
 export interface Borrowing {
   id: number
   book_id: number
-  customer_id: number
+  user_id: number | null
   borrow_date: string
-  due_date: string
   return_date: string | null
   notes: string
+  return_notes: string
   created_at: string
   updated_at: string
 }

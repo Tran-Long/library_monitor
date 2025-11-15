@@ -79,13 +79,22 @@ export const customerService = {
 // ============= BORROWING SERVICES =============
 
 export const borrowingService = {
-  getAll: (customerId?: number, isReturned?: boolean) =>
-    api.get<Borrowing[]>('/borrowings/', { params: { customer_id: customerId, is_returned: isReturned } }),
+  getAll: (userId?: number, isReturned?: boolean) =>
+    api.get<Borrowing[]>('/borrowings/', { params: { user_id: userId, is_returned: isReturned } }),
   getById: (id: number) => api.get<Borrowing>(`/borrowings/${id}/`),
   create: (data: Partial<BorrowingRequest>) => api.post<Borrowing>('/borrowings/', data),
   update: (id: number, data: Partial<BorrowingRequest>) => api.put<Borrowing>(`/borrowings/${id}/`, data),
   delete: (id: number) => api.delete(`/borrowings/${id}/`),
-  returnBook: (id: number) => api.post(`/borrowings/${id}/return/`, {}),
+  returnBook: (id: number, returnDate?: Date, returnNotes?: string) => {
+    const body: any = {}
+    if (returnDate) {
+      body.return_date = returnDate.toISOString()
+    }
+    if (returnNotes) {
+      body.return_notes = returnNotes
+    }
+    return api.post(`/borrowings/${id}/return/`, body)
+  },
 }
 
 export default api

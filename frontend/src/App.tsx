@@ -5,6 +5,8 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStr
 import type { Library, Bookshelf, Shelf, Book, User } from '@/types'
 import DashboardClickable from '@/components/DashboardClickable'
 import { useBorrowings } from '@/hooks'
+import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 // Import new modular components
 import { DraggableLibraryCard, DraggableBookshelfCard, DraggableShelfCard } from '@/components/draggable'
 import { BookDetailModal, BorrowBookModal, BorrowConfirmationModal, ReturnConfirmationModal, MoveBookModal } from '@/components/modals'
@@ -45,11 +47,10 @@ function formatDateAsddmmyy(dateValue: string | Date | null | undefined): string
   return `${day}/${month}/${year}`
 }
 
-export default function App() {
+function AppContent() {
   // Data hooks
   const { borrowings, fetchBorrowings } = useBorrowings()
-  
-  // Main states
+  const { t } = useLanguage()
   const [libraries, setLibraries] = useState<Library[]>([])
   const [selectedLibrary, setSelectedLibrary] = useState<Library | null>(null)
   const [bookshelves, setBookshelves] = useState<Bookshelf[]>([])
@@ -1227,7 +1228,7 @@ export default function App() {
                 <button
                   onClick={() => setShowNavPane(!showNavPane)}
                   className="text-gray-600 hover:text-gray-800 p-1"
-                  title={showNavPane ? "Hide navigation" : "Show navigation"}
+                  title={showNavPane ? t('hideNavigation') : t('showNavigation')}
                 >
                   {showNavPane ? "☰" : "►"}
                 </button>
@@ -1240,13 +1241,13 @@ export default function App() {
                     updateUrl('dashboard')
                   }}
                   className="text-blue-600 hover:text-blue-700 font-medium"
-                  title="Go back to dashboard"
+                  title={t('goBackToDashboard')}
                 >
                   🏠
                 </button>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"><img src="/bookshelf.png" alt="Bookshelf" className="w-8 h-8" /> {selectedBookshelf.name}</h1>
-              <div></div>
+              <LanguageSwitcher />
             </div>
             {selectedBookshelf.description && (
               <p className="text-gray-600 mt-2 text-center">{selectedBookshelf.description}</p>
@@ -1394,7 +1395,7 @@ export default function App() {
 
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Shelves ({shelves.length})</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{t('shelves_count').replace('{count}', shelves.length.toString())}</h2>
               <button
                 onClick={() => {
                   setEditingShelf(null)
@@ -1403,13 +1404,13 @@ export default function App() {
                 }}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2 transition"
               >
-                ➕ Add Shelf
+                ➕ {t('addShelf')}
               </button>
             </div>
 
             {shelves.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                <p className="text-gray-500 mb-4">No shelves yet. Create one to get started!</p>
+                <p className="text-gray-500 mb-4">{t('noShelvesYet')}</p>
               </div>
             ) : (
               <div className="bg-white rounded-lg shadow-md p-8 border-l-8 border-amber-600">
@@ -1463,7 +1464,7 @@ export default function App() {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">Add New Shelf</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t('addNewShelf')}</h2>
                 <button
                   onClick={() => setShowCreateShelfModal(false)}
                   className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -1473,33 +1474,33 @@ export default function App() {
               </div>
               <form onSubmit={handleCreateShelf} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Shelf Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('shelfNameLabel')}</label>
                   <input
                     type="text"
                     value={shelfFormData.name}
                     onChange={(e) => setShelfFormData({ ...shelfFormData, name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="e.g., Shelf A (optional)"
+                    placeholder={t('shelfNamePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('shortDescriptionLabel')}</label>
                   <input
                     type="text"
                     value={shelfFormData.short_description}
                     onChange={(e) => setShelfFormData({ ...shelfFormData, short_description: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Brief description for the card"
+                    placeholder={t('briefDescriptionForCardPlaceholder')}
                     maxLength={255}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Long Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('longDescriptionLabel')}</label>
                   <textarea
                     value={shelfFormData.long_description}
                     onChange={(e) => setShelfFormData({ ...shelfFormData, long_description: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                    placeholder="Detailed description (shown in detail view)"
+                    placeholder={t('detailedDescriptionDetailViewPlaceholder')}
                     rows={3}
                   />
                 </div>
@@ -1509,14 +1510,14 @@ export default function App() {
                     onClick={() => setShowCreateShelfModal(false)}
                     className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
                     className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition"
                   >
-                    {isSubmitting ? 'Adding...' : 'Add Shelf'}
+                    {isSubmitting ? t('adding') : t('addShelfButton')}
                   </button>
                 </div>
               </form>
@@ -1966,7 +1967,7 @@ export default function App() {
                 <button
                   onClick={() => setShowNavPane(!showNavPane)}
                   className="text-gray-600 hover:text-gray-800 p-1"
-                  title={showNavPane ? "Hide navigation" : "Show navigation"}
+                  title={showNavPane ? t('hideNavigation') : t('showNavigation')}
                 >
                   {showNavPane ? "☰" : "►"}
                 </button>
@@ -1980,13 +1981,13 @@ export default function App() {
                     updateUrl('dashboard')
                   }}
                   className="text-blue-600 hover:text-blue-700 font-medium"
-                  title="Go back to dashboard"
+                  title={t('goBackToDashboard')}
                 >
                   🏠
                 </button>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"><img src="/library.png" alt="Library" className="w-8 h-8" /> {selectedLibrary.name}</h1>
-              <div></div>
+              <LanguageSwitcher />
             </div>
             {selectedLibrary.description && (
               <p className="text-gray-600 mt-2 text-center">{selectedLibrary.description}</p>
@@ -2136,7 +2137,7 @@ export default function App() {
               )}
 
               <div className="mb-6 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-800">Bookshelves ({bookshelves.length})</h2>
+                <h2 className="text-2xl font-bold text-gray-800">{t('bookshelves_count').replace('{count}', bookshelves.length.toString())}</h2>
             <button
               onClick={() => {
                 setEditingBookshelf(null)
@@ -2145,13 +2146,13 @@ export default function App() {
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2 transition"
             >
-              ➕ Add Bookshelf
+              ➕ {t('addBookshelf')}
             </button>
           </div>
 
           {bookshelves.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-              <p className="text-gray-500 mb-4">No bookshelves yet. Create one to get started!</p>
+              <p className="text-gray-500 mb-4">{t('noBookshelvesYet')}</p>
             </div>
           ) : (
             <DndContext
@@ -2193,7 +2194,7 @@ export default function App() {
             <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {editingBookshelf ? 'Edit Bookshelf' : 'Create New Bookshelf'}
+                  {editingBookshelf ? t('editBookshelf') : t('createNewBookshelf')}
                 </h2>
                 <button
                   onClick={() => {
@@ -2207,34 +2208,34 @@ export default function App() {
               </div>
               <form onSubmit={editingBookshelf ? handleUpdateBookshelf : handleCreateBookshelf} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Bookshelf Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('bookshelfNameLabel')} *</label>
                   <input
                     type="text"
                     required
                     value={bookshelfFormData.name}
                     onChange={(e) => setBookshelfFormData({ ...bookshelfFormData, name: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="e.g., Fiction Section"
+                    placeholder={t('fictionSectionPlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('shortDescriptionLabel')}</label>
                   <input
                     type="text"
                     value={bookshelfFormData.short_description}
                     onChange={(e) => setBookshelfFormData({ ...bookshelfFormData, short_description: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Brief description (shown on card)"
+                    placeholder={t('briefDescriptionOnCardPlaceholder')}
                     maxLength={255}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Long Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('longDescriptionLabel')}</label>
                   <textarea
                     value={bookshelfFormData.long_description}
                     onChange={(e) => setBookshelfFormData({ ...bookshelfFormData, long_description: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Detailed description (shown in detail popup)"
+                    placeholder={t('detailedDescriptionPopupPlaceholder')}
                     rows={3}
                   />
                 </div>
@@ -2247,14 +2248,14 @@ export default function App() {
                     }}
                     className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
                   >
-                    Cancel
+                    {t('cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
                     className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition"
                   >
-                    {isSubmitting ? 'Saving...' : editingBookshelf ? 'Update' : 'Create'}
+                    {isSubmitting ? t('saving') : editingBookshelf ? t('updateLibrary') : t('createLibrary')}
                   </button>
                 </div>
               </form>
@@ -2326,8 +2327,9 @@ export default function App() {
       <div className="min-h-screen bg-gray-100">
         <header className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 py-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2"><img src="/library.png" alt="Library" className="w-8 h-8" /> Library Monitor</h1>
+            <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2"><img src="/library.png" alt="Library" className="w-8 h-8" /> {t('libraryMonitor')}</h1>
+              <LanguageSwitcher />
             </div>
           </div>
         </header>
@@ -2607,74 +2609,74 @@ export default function App() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]" onClick={() => { setShowCreateLibraryModal(false); setEditingLibrary(null) }}>
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">{editingLibrary ? 'Edit Library' : 'Add New Library'}</h2>
+              <h2 className="text-2xl font-bold">{editingLibrary ? t('editLibrary') : t('addNewLibrary')}</h2>
               <button onClick={() => { setShowCreateLibraryModal(false); setEditingLibrary(null) }} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
             </div>
             <form onSubmit={editingLibrary ? handleUpdateLibrary : handleCreateLibrary} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Library Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('libraryNameLabel')} *</label>
                 <input
                   type="text"
                   required
                   value={libraryFormData.name}
                   onChange={(e) => setLibraryFormData({ ...libraryFormData, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Library name"
+                  placeholder={t('libraryNamePlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('shortDescriptionLabel')}</label>
                 <input
                   type="text"
                   value={libraryFormData.short_description}
                   onChange={(e) => setLibraryFormData({ ...libraryFormData, short_description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Brief description"
+                  placeholder={t('briefDescriptionPlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Long Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('longDescriptionLabel')}</label>
                 <textarea
                   value={libraryFormData.long_description}
                   onChange={(e) => setLibraryFormData({ ...libraryFormData, long_description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Detailed description"
+                  placeholder={t('detailedDescriptionPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('addressLabel')}</label>
                 <input
                   type="text"
                   value={libraryFormData.address}
                   onChange={(e) => setLibraryFormData({ ...libraryFormData, address: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Library address"
+                  placeholder={t('libraryAddressPlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('phoneLabel')}</label>
                 <input
                   type="tel"
                   value={libraryFormData.phone}
                   onChange={(e) => setLibraryFormData({ ...libraryFormData, phone: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Phone number"
+                  placeholder={t('phoneNumberPlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('emailLabel')}</label>
                 <input
                   type="email"
                   value={libraryFormData.email}
                   onChange={(e) => setLibraryFormData({ ...libraryFormData, email: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Email address"
+                  placeholder={t('emailAddressPlaceholder')}
                 />
               </div>
 
@@ -2688,14 +2690,14 @@ export default function App() {
                   }}
                   className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Saving...' : (editingLibrary ? 'Update Library' : 'Create Library')}
+                  {isSubmitting ? t('saving') : (editingLibrary ? t('updateLibrary') : t('createLibrary'))}
                 </button>
               </div>
             </form>
@@ -2824,37 +2826,37 @@ export default function App() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]" onClick={() => setShowCreateBookModal(false)}>
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <div className="flex justify-between items-center p-6 border-b border-gray-200 flex-shrink-0">
-              <h2 className="text-2xl font-bold">{editingBook ? 'Edit Book' : 'Add New Book'}</h2>
+              <h2 className="text-2xl font-bold">{editingBook ? t('editBookTitle') : t('addNewBookTitle')}</h2>
               <button onClick={() => { setShowCreateBookModal(false); setEditingBook(null) }} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
             </div>
             
             <form onSubmit={editingBook ? handleUpdateBook : handleCreateBook} className="space-y-4 overflow-y-auto flex-1 p-6">
               {/* Book Details */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('bookTitleLabel')} *</label>
                 <input
                   type="text"
                   required
                   value={bookFormData.title}
                   onChange={(e) => setBookFormData({ ...bookFormData, title: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Book title"
+                  placeholder={t('bookTitlePlaceholder')}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Author</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('author')}</label>
                 <input
                   type="text"
                   value={bookFormData.author}
                   onChange={(e) => setBookFormData({ ...bookFormData, author: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Author name"
+                  placeholder={t('authorPlaceholder')}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Publication Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('publicationDateLabel')}</label>
                 <input
                   type="date"
                   value={bookFormData.year || ''}
@@ -2870,23 +2872,23 @@ export default function App() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('shortDescriptionLabel')}</label>
                 <input
                   type="text"
                   value={bookFormData.short_description}
                   onChange={(e) => setBookFormData({ ...bookFormData, short_description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Brief description"
+                  placeholder={t('briefDescriptionPlaceholder')}
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Long Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('longDescriptionLabel')}</label>
                 <textarea
                   value={bookFormData.long_description}
                   onChange={(e) => setBookFormData({ ...bookFormData, long_description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Detailed description"
+                  placeholder={t('detailedDescriptionPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -2894,7 +2896,7 @@ export default function App() {
               {/* Placement Options - only show when creating, not editing */}
               {!editingBook && (
                 <div className="border-t border-gray-200 pt-4 mt-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Where to place this book?</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">{t('wherePlaceBook')}</label>
                   <div className="space-y-2">
                     <label className="flex items-center">
                       <input
@@ -2905,7 +2907,7 @@ export default function App() {
                         onChange={(e) => setPlacementType(e.target.value as 'storage' | 'shelf')}
                         className="mr-2"
                       />
-                      <span className="text-sm text-gray-700">Storage</span>
+                      <span className="text-sm text-gray-700">{t('placementStorage')}</span>
                     </label>
                     <label className="flex items-center">
                       <input
@@ -2916,7 +2918,7 @@ export default function App() {
                         onChange={(e) => setPlacementType(e.target.value as 'storage' | 'shelf')}
                         className="mr-2"
                       />
-                      <span className="text-sm text-gray-700">Library Shelf</span>
+                      <span className="text-sm text-gray-700">{t('placementShelf')}</span>
                     </label>
                   </div>
                 </div>
@@ -2925,7 +2927,7 @@ export default function App() {
               {!editingBook && placementType === 'shelf' && (
                 <div className="space-y-3 bg-gray-50 p-3 rounded">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Library *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('libraries')} *</label>
                     <select
                       value={selectedLibraryForBook}
                       onChange={(e) => {
@@ -2935,7 +2937,7 @@ export default function App() {
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
-                      <option value="">-- Select a library --</option>
+                      <option value="">{t('selectLibraryOption')}</option>
                       {libraries.map((lib) => (
                         <option key={lib.id} value={lib.id}>{lib.name}</option>
                       ))}
@@ -2944,7 +2946,7 @@ export default function App() {
                   
                   {selectedLibraryForBook && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Bookshelf *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('bookshelfName')} *</label>
                       <select
                         value={selectedBookshelfForBook}
                         onChange={(e) => {
@@ -2953,7 +2955,7 @@ export default function App() {
                         }}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">-- Select a bookshelf --</option>
+                        <option value="">{t('selectBookshelfOption')}</option>
                         {allBookshelves
                           .filter((bs) => bs.library_id === parseInt(selectedLibraryForBook))
                           .map((bs) => (
@@ -2965,13 +2967,13 @@ export default function App() {
                   
                   {selectedBookshelfForBook && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Shelf *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('shelfName')} *</label>
                       <select
                         value={selectedShelfIdForBook}
                         onChange={(e) => setSelectedShelfIdForBook(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">-- Select a shelf --</option>
+                        <option value="">{t('selectShelfOption')}</option>
                         {allShelves
                           .filter((s) => s.bookshelf_id === parseInt(selectedBookshelfForBook))
                           .map((s) => (
@@ -2998,14 +3000,14 @@ export default function App() {
                   }}
                   className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Saving...' : (editingBook ? 'Update Book' : 'Create Book')}
+                  {isSubmitting ? t('saving') : (editingBook ? t('updateBook') : t('createBook'))}
                 </button>
               </div>
             </form>
@@ -3146,5 +3148,13 @@ export default function App() {
         />
       )}
     </>
+  )
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   )
 }

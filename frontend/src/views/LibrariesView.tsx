@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from '@dnd-kit/sortable'
 import { DraggableLibraryCard } from '@/components/draggable'
+import { useLanguage } from '@/contexts/LanguageContext'
 import type { Library, Bookshelf, Shelf, Book } from '@/types'
 
 interface DetailPopup {
@@ -76,6 +77,7 @@ export function LibrariesView({
   onSetShelfDetailPopup,
   onLibraryDragEnd,
 }: LibrariesViewProps) {
+  const { t } = useLanguage()
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <header className="bg-white shadow-sm">
@@ -84,14 +86,14 @@ export function LibrariesView({
             <button
               onClick={onToggleNavPane}
               className="text-gray-600 hover:text-gray-800 p-1"
-              title={showNavPane ? "Hide navigation" : "Show navigation"}
+              title={showNavPane ? t('hideNavigation') : t('showNavigation')}
             >
               {showNavPane ? "☰" : "►"}
             </button>
             <button
               onClick={onBackClick}
               className="text-blue-600 hover:text-blue-700 font-medium"
-              title="Go back to dashboard"
+              title={t('goBackToDashboard')}
             >
               🏠
             </button>
@@ -106,7 +108,7 @@ export function LibrariesView({
             <div className="p-4">
               <div className="space-y-2">
                 {libraries.length === 0 ? (
-                  <p className="text-xs text-gray-500 px-2 py-1">No libraries</p>
+                  <p className="text-xs text-gray-500 px-2 py-1">{t('noLibraries')}</p>
                 ) : (
                   <div className="space-y-1">
                     {libraries.map((library) => {
@@ -120,7 +122,7 @@ export function LibrariesView({
                             <button
                               onClick={() => onToggleBookshelfExpansion(library.id)}
                               className="w-6 text-center px-1 py-1 text-gray-600 hover:bg-gray-200 rounded transition"
-                              title="Toggle dropdown"
+                              title={t('toggleDropdown')}
                             >
                               {isExpanded ? "▼" : "▶"}
                             </button>
@@ -151,7 +153,7 @@ export function LibrariesView({
                                       <button
                                         onClick={() => onToggleBookshelfExpansion(bookshelf.id)}
                                         className="w-6 text-center px-1 py-1 text-gray-600 hover:bg-gray-200 rounded transition"
-                                        title="Toggle dropdown"
+                                        title={t('toggleDropdown')}
                                       >
                                         {isBookshelfExpanded ? "▼" : "▶"}
                                       </button>
@@ -190,7 +192,7 @@ export function LibrariesView({
                                     )}
                                     {isBookshelfExpanded && bookshelfShelves.length === 0 && (
                                       <div className="ml-4 px-2 py-1 text-xs text-gray-500">
-                                        No shelves
+                                        {t('noShelves')}
                                       </div>
                                     )}
                                   </div>
@@ -200,7 +202,7 @@ export function LibrariesView({
                           )}
                           {isExpanded && libraryBookshelves.length === 0 && (
                             <div className="ml-4 px-2 py-1 text-xs text-gray-500">
-                              No bookshelves
+                              {t('noBookshelves')}
                             </div>
                           )}
                         </div>
@@ -217,12 +219,12 @@ export function LibrariesView({
         <main className="flex-1 overflow-y-auto px-4 py-8">
           <div className="max-w-7xl mx-auto">
             <div className="mb-6 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-800">Libraries ({libraries.length})</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{t('libraries_count').replace('{count}', libraries.length.toString())}</h2>
               <button
                 onClick={onCreateLibraryClick}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2 transition"
               >
-                ➕ Add Library
+                ➕ {t('addLibraryButton')}
               </button>
             </div>
 
@@ -234,12 +236,12 @@ export function LibrariesView({
 
             {libraries.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                <p className="text-gray-500 mb-4">No libraries yet. Create one to get started!</p>
+                <p className="text-gray-500 mb-4">{t('noLibrariesYet')}</p>
                 <button
                   onClick={onCreateLibraryClick}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium inline-flex items-center gap-2 transition"
                 >
-                  ➕ Create First Library
+                  ➕ {t('createFirstLibrary')}
                 </button>
               </div>
             ) : (
@@ -285,10 +287,10 @@ export function LibrariesView({
           <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                {detailPopup.type === 'library' && <><img src="/library.png" alt="Library" className="w-6 h-6" /> <span>Library Details</span></>}
-                {detailPopup.type === 'bookshelf' && <><img src="/bookshelf.png" alt="Bookshelf" className="w-6 h-6" /> <span>Bookshelf Details</span></>}
-                {detailPopup.type === 'shelf' && <><img src="/shelf.png" alt="Shelf" className="w-6 h-6" /> <span>Shelf Details</span></>}
-                {detailPopup.type === 'book' && <>📚 <span>Book Details</span></>}
+                {detailPopup.type === 'library' && <><img src="/library.png" alt="Library" className="w-6 h-6" /> <span>{t('libraryDetails')}</span></>}
+                {detailPopup.type === 'bookshelf' && <><img src="/bookshelf.png" alt="Bookshelf" className="w-6 h-6" /> <span>{t('bookshelfDetails')}</span></>}
+                {detailPopup.type === 'shelf' && <><img src="/shelf.png" alt="Shelf" className="w-6 h-6" /> <span>{t('shelfDetails')}</span></>}
+                {detailPopup.type === 'book' && <>📚 <span>{t('bookDetails')}</span></>}
               </h2>
               <button
                 onClick={() => onSetDetailPopup(null)}
@@ -299,7 +301,7 @@ export function LibrariesView({
             </div>
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold text-gray-700">Name</h3>
+                <h3 className="font-semibold text-gray-700">{t('name')}</h3>
                 <p className="text-gray-600 mt-1">
                   {detailPopup.type === 'library' && (detailPopup.data as Library).name}
                   {detailPopup.type === 'bookshelf' && (detailPopup.data as Bookshelf).name}
@@ -311,19 +313,19 @@ export function LibrariesView({
                 <>
                   {(detailPopup.data as Library).address && (
                     <div>
-                      <h3 className="font-semibold text-gray-700">Address</h3>
+                      <h3 className="font-semibold text-gray-700">{t('address')}</h3>
                       <p className="text-gray-600 mt-1">{(detailPopup.data as Library).address}</p>
                     </div>
                   )}
                   {(detailPopup.data as Library).phone && (
                     <div>
-                      <h3 className="font-semibold text-gray-700">Phone</h3>
+                      <h3 className="font-semibold text-gray-700">{t('phone')}</h3>
                       <p className="text-gray-600 mt-1">{(detailPopup.data as Library).phone}</p>
                     </div>
                   )}
                   {(detailPopup.data as Library).email && (
                     <div>
-                      <h3 className="font-semibold text-gray-700">Email</h3>
+                      <h3 className="font-semibold text-gray-700">{t('email')}</h3>
                       <p className="text-gray-600 mt-1">{(detailPopup.data as Library).email}</p>
                     </div>
                   )}
@@ -343,7 +345,7 @@ export function LibrariesView({
                 </>
               )}
               <div>
-                <h3 className="font-semibold text-gray-700">Short Description</h3>
+                <h3 className="font-semibold text-gray-700">{t('shortDescription')}</h3>
                 <p className="text-gray-600 mt-1">
                   {detailPopup.type === 'library' && ((detailPopup.data as Library).short_description || '(None)')}
                   {detailPopup.type === 'bookshelf' && ((detailPopup.data as Bookshelf).short_description || '(None)')}
@@ -352,7 +354,7 @@ export function LibrariesView({
                 </p>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-700">Long Description</h3>
+                <h3 className="font-semibold text-gray-700">{t('longDescription')}</h3>
                 <p className="text-gray-600 mt-1 whitespace-pre-wrap">
                   {detailPopup.type === 'library' && ((detailPopup.data as Library).long_description || '(None)')}
                   {detailPopup.type === 'bookshelf' && ((detailPopup.data as Bookshelf).long_description || '(None)')}
@@ -366,7 +368,7 @@ export function LibrariesView({
                 onClick={() => onSetDetailPopup(null)}
                 className="w-full px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
               >
-                Close
+                {t('close')}
               </button>
             </div>
           </div>

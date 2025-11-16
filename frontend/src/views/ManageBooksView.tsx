@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Book, Library, Bookshelf, Shelf, User, Borrowing } from '@/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 /**
  * Format a date string (YYYY-MM-DD) as dd/mm/yyyy
@@ -94,6 +95,8 @@ export function ManageBooksView({
   const [libraryPopupBookId, setLibraryPopupBookId] = useState<number | null>(null)
   const [borrowedPopupBookId, setBorrowedPopupBookId] = useState<number | null>(null)
 
+  const { t } = useLanguage()
+
   // Close popup when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -120,12 +123,12 @@ export function ManageBooksView({
     const isBorrowed = book.borrowed_by_user_id !== null && book.borrowed_by_user_id !== undefined
     
     if (book.status === 'storage') {
-      return { label: 'Storage', color: 'bg-blue-50 text-blue-700 border border-blue-200', icon: '/box.png', iconAlt: 'Storage' }
+      return { label: t('storage'), color: 'bg-blue-50 text-blue-700 border border-blue-200', icon: '/box.png', iconAlt: t('storage') }
     }
     if (isBorrowed || book.status === 'borrowed') {
-      return { label: 'Borrowed', color: 'bg-purple-50 text-purple-700 border border-purple-200', icon: '/borrow.png', iconAlt: 'Borrowed' }
+      return { label: t('borrowed'), color: 'bg-purple-50 text-purple-700 border border-purple-200', icon: '/borrow.png', iconAlt: t('borrowed') }
     }
-    return { label: 'Library', color: 'bg-green-50 text-green-700 border border-green-200', icon: '/library.png', iconAlt: 'Library' }           
+    return { label: t('library'), color: 'bg-green-50 text-green-700 border border-green-200', icon: '/library.png', iconAlt: t('library') }           
   }
 
   // Get available bookshelves for selected library
@@ -216,20 +219,20 @@ export function ManageBooksView({
               <button
                 onClick={onBackClick}
                 className="text-blue-600 hover:text-blue-700 font-medium"
-                title="Go back to dashboard"
+                title={useLanguage().t('goBackToDashboard')}
               >
                 🏠
               </button>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
-              📚 Manage Books
+              📚 {t('manageBooks')}
             </h1>
             <div>
               <button
                 onClick={onAddBookClick}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2 transition"
               >
-                ➕ Add New Book
+                ➕ {t('addBook')}
               </button>
             </div>
           </div>
@@ -241,15 +244,15 @@ export function ManageBooksView({
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="text-red-700">
-                <strong>Error:</strong> {error}
+                <strong>{t('error')}:</strong> {error}
               </div>
               {onRetry && (
                 <button
                   onClick={onRetry}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-medium transition"
-                  title="Try to load data again"
+                  title={t('error')}
                 >
-                  🔄 Retry
+                  🔄 {t('retry')}
                 </button>
               )}
             </div>
@@ -258,25 +261,25 @@ export function ManageBooksView({
 
         {error && books.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <p className="text-gray-600 mb-4">Failed to load books. The backend server might be unavailable.</p>
-            <p className="text-gray-500 text-sm mb-6">Please check your connection and try again.</p>
+            <p className="text-gray-600 mb-4">{t('failedToLoadBooks')}</p>
+            <p className="text-gray-500 text-sm mb-6">{t('checkConnectionRetry')}</p>
             {onRetry && (
               <button
                 onClick={onRetry}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium transition"
               >
-                🔄 Retry Loading Books
+                🔄 {t('retryLoadingBooks')}
               </button>
             )}
           </div>
         ) : books.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <p className="text-gray-500 mb-4">No books yet. Add one to get started!</p>
+            <p className="text-gray-500 mb-4">{t('noBooksYet')}</p>
             <button
               onClick={onAddBookClick}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium inline-flex items-center gap-2 transition"
             >
-              ➕ Add First Book
+              ➕ {t('addFirstBook')}
             </button>
           </div>
         ) : (
@@ -287,7 +290,7 @@ export function ManageBooksView({
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Search books by title, author, year..."
+                  placeholder={t('searchBooksPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
@@ -312,7 +315,7 @@ export function ManageBooksView({
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
                   >
-                    All
+                    {t('all')}
                   </button>
                   <button
                     onClick={() => {
@@ -329,7 +332,7 @@ export function ManageBooksView({
                     }`}
                   >
                     <img src="/box.png" alt="Storage" className="w-4 h-4 inline-block mr-1" />
-                    Storage
+                    {t('storage')}
                   </button>
                   <button
                     onClick={() => {
@@ -346,7 +349,7 @@ export function ManageBooksView({
                     }`}
                   >
                     <img src="/library.png" alt="Library" className="w-4 h-4 inline-block mr-1" />
-                    Library
+                    {t('libraries')}
                   </button>
                   <button
                     onClick={() => {
@@ -363,7 +366,7 @@ export function ManageBooksView({
                     }`}
                   >
                     <img src="/borrow.png" alt="Borrowed" className="w-4 h-4 inline-block mr-1" />
-                    Borrowed
+                    {t('borrowed')}
                   </button>
                 </div>
 
@@ -379,7 +382,7 @@ export function ManageBooksView({
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
-                    title="Sort by name A-Z"
+                    title={t('sortByNameAZ')}
                   >
                     A-Z
                   </button>
@@ -393,7 +396,7 @@ export function ManageBooksView({
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
-                    title="Sort by name Z-A"
+                    title={t('sortByNameZA')}
                   >
                     Z-A
                   </button>
@@ -407,9 +410,9 @@ export function ManageBooksView({
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
-                    title="Newest first"
+                    title={t('newestFirst')}
                   >
-                    <img src="/thirty-one-date.png" alt="Newest" className="w-4 h-4" /> Newest
+                    <img src="/thirty-one-date.png" alt="Newest" className="w-4 h-4" /> {t('newestFirst')}
                   </button>
                   <button
                     onClick={() => {
@@ -421,9 +424,9 @@ export function ManageBooksView({
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
-                    title="Oldest first"
+                    title={t('oldestFirst')}
                   >
-                    <img src="/number-1-date.png" alt="Oldest" className="w-4 h-4" /> Oldest
+                    <img src="/number-1-date.png" alt="Oldest" className="w-4 h-4" /> {t('oldestFirst')}
                   </button>
                 </div>
               </div>
@@ -440,7 +443,7 @@ export function ManageBooksView({
                     }}
                     className="px-3 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">All Libraries</option>
+                    <option value="">{t('allLibrariesFilter')}</option>
                     {libraries.map((lib) => (
                       <option key={lib.id} value={lib.id}>
                         {lib.name}
@@ -457,7 +460,7 @@ export function ManageBooksView({
                       }}
                       className="px-3 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">All Bookshelves</option>
+                      <option value="">{t('allBookshelvesFilter')}</option>
                       {availableBookshelves.map((bs) => (
                         <option key={bs.id} value={bs.id}>
                           {bs.name}
@@ -474,7 +477,7 @@ export function ManageBooksView({
                       }}
                       className="px-3 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">All Shelves</option>
+                      <option value="">{t('allShelvesFilter')}</option>
                       {availableShelves.map((shelf) => (
                         <option key={shelf.id} value={shelf.id}>
                           #{shelf.order} {shelf.name ? `: ${shelf.name}` : ''}
@@ -495,7 +498,7 @@ export function ManageBooksView({
                     }}
                     className="px-3 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
-                    <option value="">All Users</option>
+                    <option value="">{t('allUsersFilter')}</option>
                     {books
                       .filter(b => b.status === 'borrowed' && b.borrowed_by_user_name)
                       .reduce((unique: Array<{ id: number; name: string }>, book) => {
@@ -526,7 +529,7 @@ export function ManageBooksView({
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-600 hover:bg-gray-200'
                     }`}
-                    title="1 column layout"
+                    title={`1 ${t('columnLayout')}`}
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" />
@@ -541,7 +544,7 @@ export function ManageBooksView({
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-600 hover:bg-gray-200'
                     }`}
-                    title="2 column layout"
+                    title={`2 ${t('columnLayout')}`}
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <rect x="2" y="3" width="7" height="6" />
@@ -557,7 +560,7 @@ export function ManageBooksView({
             {/* Books List */}
             {filteredBooks.length === 0 ? (
               <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
-                <p className="text-gray-500">No books match your search or filter criteria.</p>
+                <p className="text-gray-500">{t('noMatchingBooks')}</p>
               </div>
             ) : (
               <div className={columnsView === 2 ? 'grid grid-cols-2 gap-4' : 'space-y-3'}>
@@ -620,9 +623,9 @@ export function ManageBooksView({
                                         onSetShowMoveBookModal(true)
                                       }}
                                       className="p-1 hover:bg-orange-50 rounded transition-colors"
-                                      title="Move to shelf"
+                                      title={t('moveToShelf')}
                                     >
-                                      <img src="/shelf.png" alt="Move to shelf" className="w-5 h-5" />
+                                      <img src="/shelf.png" alt={t('moveToShelf')} className="w-5 h-5" />
                                     </button>
                                   </>
                                 )}
@@ -722,14 +725,14 @@ export function ManageBooksView({
                                     <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 min-w-max z-50 pointer-events-auto">
                                       {book.borrowed_by_user_name ? (
                                         <div className="text-sm">
-                                          <p className="text-gray-600 font-medium">Borrowed by:</p>
+                                          <p className="text-gray-600 font-medium">{t('borrowedByLabel')}</p>
                                           <p className="text-purple-600 font-semibold flex items-center gap-2 mt-1">
                                             <img src="/user.png" alt="User" className="w-4 h-4" />
                                             {book.borrowed_by_user_name}
                                           </p>
                                         </div>
                                       ) : (
-                                        <p className="text-sm text-gray-500">No user information</p>
+                                        <p className="text-sm text-gray-500">{t('noUserInformation')}</p>
                                       )}
                                     </div>
                                   )}
@@ -744,16 +747,16 @@ export function ManageBooksView({
                                 <button
                                   onClick={() => onEditBook(book)}
                                   className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                                  title="Edit book"
+                                  title={t('edit')}
                                 >
                                   ✏️
                                 </button>
                                 <button
                                   onClick={() => onDeleteBook(book.id, book.shelf_id || null)}
                                   className="px-2 py-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                  title="Delete book"
+                                  title={t('delete')}
                                 >
-                                  <img src="/trash.png" alt="Delete book" className="w-5 h-5" />
+                                  <img src="/trash.png" alt={t('delete')} className="w-5 h-5" />
                                 </button>
                               </div>
                             </div>

@@ -1,5 +1,6 @@
 import React from 'react'
 import type { Book, Library, Bookshelf, Shelf } from '@/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { MoveBookModal, BookDetailModal } from '@/components/modals'
 
 /**
@@ -61,6 +62,7 @@ export const StorageView: React.FC<StorageViewProps> = ({
   onMoveBook,
   onNavigateBack,
 }) => {
+  const { t } = useLanguage()
   const storageBooks = books.filter(
     (b: Book) => (b.shelf_id === null && b.status === 'storage') || (b.shelf_id === null && !b.status)
   )
@@ -74,13 +76,13 @@ export const StorageView: React.FC<StorageViewProps> = ({
               <button
                 onClick={onNavigateBack}
                 className="text-blue-600 hover:text-blue-700 font-medium"
-                title="Go back to dashboard"
+                title={t('goBackToDashboard')}
               >
                 🏠
               </button>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
-              <img src="/box.png" alt="Storage" className="w-8 h-8" /> Storage
+              <img src="/box.png" alt="Storage" className="w-8 h-8" /> {t('storage')}
             </h1>
             <div></div>
           </div>
@@ -90,7 +92,7 @@ export const StorageView: React.FC<StorageViewProps> = ({
       <main className="max-w-7xl mx-auto px-4 py-8">
         {storageBooks.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <p className="text-gray-500">No books in storage</p>
+            <p className="text-gray-500">{t('noBooks')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -107,7 +109,7 @@ export const StorageView: React.FC<StorageViewProps> = ({
                     <button
                       onClick={() => onSetDetailPopup({ type: 'book', data: book })}
                       className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                      title="View details"
+                      title={t('viewDetails')}
                     >
                       ℹ️
                     </button>
@@ -117,7 +119,7 @@ export const StorageView: React.FC<StorageViewProps> = ({
                         onSetShowBorrowModal(true)
                       }}
                       className="px-2 py-1 hover:bg-green-50 rounded transition-colors"
-                      title="Lend book"
+                      title={t('lendBook')}
                     >
                       <img src="/borrow.png" alt="Lend book" className="w-5 h-5" />
                     </button>
@@ -127,7 +129,7 @@ export const StorageView: React.FC<StorageViewProps> = ({
                         onSetShowMoveBookModal(true)
                       }}
                       className="px-2 py-1 hover:bg-orange-50 rounded transition-colors"
-                      title="Move to shelf"
+                      title={t('moveToShelf')}
                     >
                       <img src="/shelf.png" alt="Shelf" className="w-5 h-5" />
                     </button>

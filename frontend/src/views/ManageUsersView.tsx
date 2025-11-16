@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import type { User, Book } from '@/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 /**
  * Format a date string (YYYY-MM-DD) as dd/mm/yyyy
@@ -39,11 +40,11 @@ interface ManageUsersViewProps {
   onRetry?: () => void
 }
 
-const getGenderDisplay = (gender: string): string => {
+const getGenderDisplay = (gender: string, t: any): string => {
   const genderMap: { [key: string]: string } = {
-    'M': '♂️ Male',
-    'F': '♀️ Female',
-    'O': '⚪ Other'
+    'M': `${t('maleGender')}`,
+    'F': `${t('femaleGender')}`,
+    'O': `${t('otherGender')}`
   }
   return genderMap[gender] || gender
 }
@@ -59,6 +60,7 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
   onReturnBook,
   onRetry,
 }) => {
+  const { t } = useLanguage()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
@@ -119,20 +121,20 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
         <div className="px-4 py-4">
           <div className="flex items-center gap-4 justify-between">
             <div className="flex items-center gap-4">
-              <button onClick={onBackClick} className="text-blue-600 hover:text-blue-700 font-medium" title="Go back to dashboard">
+              <button onClick={onBackClick} className="text-blue-600 hover:text-blue-700 font-medium" title={useLanguage().t('goBackToDashboard')}>
                 🏠
               </button>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
               <img src="/group.png" alt="Manage Users" className="w-8 h-8" />
-              Manage Users
+              {t('manageUsersTitle')}
             </h1>
             <div>
               <button
                 onClick={onAddUserClick}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2 transition"
               >
-                ➕ Add New User
+                ➕ {t('addNewUser')}
               </button>
             </div>
           </div>
@@ -144,15 +146,15 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="text-red-700">
-                <strong>Error:</strong> {error}
+                <strong>{t('error')}:</strong> {error}
               </div>
               {onRetry && (
                 <button
                   onClick={onRetry}
                   className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded font-medium transition"
-                  title="Try to load data again"
+                  title={t('tryLoadingDataAgain')}
                 >
-                  🔄 Retry
+                  🔄 {t('confirm')}
                 </button>
               )}
             </div>
@@ -161,20 +163,20 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
 
         {error && users.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <p className="text-gray-600 mb-4">Failed to load users. The backend server might be unavailable.</p>
-            <p className="text-gray-500 text-sm mb-6">Please check your connection and try again.</p>
+            <p className="text-gray-600 mb-4">{t('failedToLoadUsers')}</p>
+            <p className="text-gray-500 text-sm mb-6">{t('checkConnectionRetry')}</p>
             {onRetry && (
               <button
                 onClick={onRetry}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded font-medium transition"
               >
-                🔄 Retry Loading Users
+                🔄 {t('retryLoadingUsers')}
               </button>
             )}
           </div>
         ) : users.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <p className="text-gray-500">No users yet. Click "Add New User" button to create one.</p>
+            <p className="text-gray-500">{t('noUsersYet')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -184,7 +186,7 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Search users by name, phone, short desc, long desc..."
+                  placeholder={t('searchUsersPlaceholder')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
@@ -199,7 +201,7 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
                   onChange={(e) => setSelectedDepartment(e.target.value || null)}
                   className="px-3 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="">All Departments</option>
+                  <option value="">{t('allDepartments')}</option>
                   {uniqueDepartments.map((dept) => (
                     <option key={dept} value={dept}>
                       {dept}
@@ -216,7 +218,7 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
-                    title="Sort by name A-Z"
+                    title={t('sortByNameAZ')}
                   >
                     A-Z
                   </button>
@@ -227,7 +229,7 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
-                    title="Sort by name Z-A"
+                    title={t('sortByNameZA')}
                   >
                     Z-A
                   </button>
@@ -237,7 +239,7 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
               {/* Results Count and Layout Toggle */}
               <div className="flex items-center justify-between pt-2 border-t">
                 <span className="text-xs text-gray-500">
-                  {filteredUsers.length} of {users.length} users
+                  {t('usersCount').replace('{count}', filteredUsers.length.toString()).replace('{total}', users.length.toString())}
                 </span>
                 {/* Layout toggle buttons */}
                 <div className="flex gap-0.5 bg-gray-100 p-0.5 rounded">
@@ -248,7 +250,7 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-600 hover:bg-gray-200'
                     }`}
-                    title="1 column layout"
+                    title={`1 ${t('columnLayout')}`}
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4z" />
@@ -263,7 +265,7 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-600 hover:bg-gray-200'
                     }`}
-                    title="2 column layout"
+                    title={`2 ${t('columnLayout')}`}
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <rect x="2" y="3" width="7" height="6" />
@@ -279,7 +281,7 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
             {/* Users Grid/List */}
             {filteredUsers.length === 0 ? (
               <div className="text-center py-8 bg-white rounded-lg border border-gray-200">
-                <p className="text-gray-500">No users match your search or filter criteria.</p>
+                <p className="text-gray-500">{t('noMatchingUsers')}</p>
               </div>
             ) : (
               <div className={columnsView === 2 ? 'grid grid-cols-2 gap-4' : 'space-y-3'}>
@@ -314,12 +316,12 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
                                 {/* Sticky Header */}
                                 <div className="flex justify-between items-center mb-6 p-6 border-b border-gray-200 bg-white sticky top-0 z-10">
                                   <h2 className="text-2xl font-bold text-gray-900">
-                                    📚 Books Borrowed by <span className="text-blue-600">{user.full_name}</span>
+                                    {t('booksBorrowedByUser').replace('{name}', user.full_name || 'User')}
                                   </h2>
                                   <button
                                     onClick={() => setBorrowedPopupUserId(null)}
                                     className="text-gray-500 hover:text-gray-700 text-2xl font-bold w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded transition-colors flex-shrink-0"
-                                    title="Close"
+                                    title={t('close')}
                                   >
                                     ✕
                                   </button>
@@ -329,7 +331,7 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
                                 <div className="overflow-y-auto flex-1 px-6 pb-6">
 
                                 {getBorrowedBooks(user.id).length === 0 ? (
-                                  <p className="text-sm text-gray-500 text-center py-8">No borrowed books</p>
+                                  <p className="text-sm text-gray-500 text-center py-8">{t('noBorrowedBooks')}</p>
                                 ) : (
                                   <div className="space-y-3">
                                     {getBorrowedBooks(user.id).map((book) => (
@@ -343,15 +345,15 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
                                               {onReturnBook && (
                                                 <button
                                                   onClick={() => {
-                                                    if (window.confirm(`Are you sure you want to return "${book.title}" to storage?`)) {
+                                                    if (window.confirm(t('areYouSureReturnBook').replace('{title}', book.title))) {
                                                       onReturnBook(book.id)
                                                       setBorrowedPopupUserId(null)
                                                     }
                                                   }}
                                                   className="p-1 hover:bg-blue-50 rounded transition-colors ml-2"
-                                                  title="Return book to storage"
+                                                  title={t('returnToStorage')}
                                                 >
-                                                  <img src="/return_book.png" alt="Return to storage" className="w-5 h-5" />
+                                                  <img src="/return_book.png" alt={t('returnToStorage')} className="w-5 h-5" />
                                                 </button>
                                               )}
                                             </div>
@@ -394,16 +396,16 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
                           <button
                             onClick={() => onEditUser(user)}
                             className="px-2 py-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                            title="Edit user"
+                            title={t('edit')}
                           >
                             ✏️
                           </button>
                           <button
                             onClick={() => onDeleteUser(user.id)}
                             className="px-2 py-1 hover:bg-red-50 rounded transition-colors"
-                            title="Delete user"
+                            title={t('delete')}
                           >
-                            <img src="/trash.png" alt="Delete" className="w-5 h-5" />
+                            <img src="/trash.png" alt={t('delete')} className="w-5 h-5" />
                           </button>
                         </div>
                       </div>
@@ -414,14 +416,14 @@ export const ManageUsersView: React.FC<ManageUsersViewProps> = ({
                       {/* Gender */}
                       <div className="flex-1">
                         <p className="text-sm text-gray-600">
-                          {getGenderDisplay(user.gender)}
+                          {getGenderDisplay(user.gender, t)}
                         </p>
                       </div>
                       
                       {/* Department */}
                       <div className="flex-1">
                         <p className="text-sm text-gray-600 flex items-center gap-2">
-                          <img src="/office-building.png" alt="Department" className="w-4 h-4" />
+                          <img src="/office-building.png" alt={t('departmentLabel')} className="w-4 h-4" />
                           {user.department || '-'}
                         </p>
                       </div>

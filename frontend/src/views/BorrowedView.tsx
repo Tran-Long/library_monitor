@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import type { Book, User, Borrowing } from '@/types'
 import { useBorrowings } from '@/hooks'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { BookDetailModal, UserDetailModal } from '@/components/modals'
 
 interface BorrowedViewProps {
@@ -39,6 +40,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   
   const { borrowings, loading, fetchBorrowings, returnBorrowing } = useBorrowings()
+  const { t } = useLanguage()
   
   useEffect(() => {
     fetchBorrowings()
@@ -205,13 +207,13 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
               <button
                 onClick={onNavigateBack}
                 className="text-blue-600 hover:text-blue-700 font-medium"
-                title="Go back to dashboard"
+                title={t('goBackToDashboard')}
               >
                 🏠
               </button>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
-              <img src="/borrow.png" alt="Borrowed" className="w-8 h-8" /> Borrowed
+              <img src="/borrow.png" alt="Borrowed" className="w-8 h-8" /> {t('borrowed')}
             </h1>
             <div></div>
           </div>
@@ -221,11 +223,11 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
       <main className="max-w-7xl mx-auto px-4 py-8">
         {loading && borrowings.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <p className="text-gray-500">Loading borrowing data...</p>
+            <p className="text-gray-500">{t('loadingBorrowingData')}</p>
           </div>
         ) : borrowings.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-            <p className="text-gray-500">No borrowing history</p>
+            <p className="text-gray-500">{t('noBorrowingHistory')}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -235,7 +237,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Search for notes (borrow/return)..."
+                  placeholder={t('searchForNotes')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
@@ -253,7 +255,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                       onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
                       className="px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
                     >
-                      Status ▼
+                      {t('statusFilter')} ▼
                     </button>
                     {openDropdown === 'status' && (
                       <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 min-w-40">
@@ -264,7 +266,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                           }}
                           className={`block w-full text-left px-4 py-2 text-sm transition ${statusFilter === 'all' ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
                         >
-                          All
+                          {t('all')}
                         </button>
                         <button
                           onClick={() => {
@@ -273,7 +275,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                           }}
                           className={`block w-full text-left px-4 py-2 text-sm transition ${statusFilter === 'borrowing' ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
                         >
-                          Borrowing
+                          {t('borrowing')}
                         </button>
                         <button
                           onClick={() => {
@@ -282,7 +284,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                           }}
                           className={`block w-full text-left px-4 py-2 text-sm transition ${statusFilter === 'returned' ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
                         >
-                          Returned
+                          {t('returned')}
                         </button>
                       </div>
                     )}
@@ -295,7 +297,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                       onClick={() => setOpenDropdown(openDropdown === 'user' ? null : 'user')}
                       className="px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
                     >
-                      👤 User ▼
+                      👤 {t('userFilter')} ▼
                     </button>
                     {openDropdown === 'user' && (
                       <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-40">
@@ -306,7 +308,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                           }}
                           className={`block w-full text-left px-4 py-2 text-sm transition ${selectedUser === null ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
                         >
-                          All Users
+                          {t('allUsers')}
                         </button>
                         {users.map(user => (
                           <button
@@ -331,7 +333,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                       onClick={() => setOpenDropdown(openDropdown === 'book' ? null : 'book')}
                       className="px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
                     >
-                      📚 Book ▼
+                      📚 {t('bookFilter')} ▼
                     </button>
                     {openDropdown === 'book' && (
                       <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-48">
@@ -342,7 +344,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                           }}
                           className={`block w-full text-left px-4 py-2 text-sm transition ${selectedBook === null ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
                         >
-                          All Books
+                          {t('allBooks')}
                         </button>
                         {books.map(book => (
                           <button
@@ -368,13 +370,13 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                       className="px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-1"
                     >
                       <img src="/borrow.png" alt="Borrow Date" className="w-4 h-4" />
-                      Borrow Date ▼
+                      {t('borrowDateFilter')} ▼
                     </button>
                     {openDropdown === 'borrow' && (
                       <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-3 min-w-48">
                         <div className="space-y-2">
                           <div>
-                            <label className="text-xs font-medium text-gray-700">From</label>
+                            <label className="text-xs font-medium text-gray-700">{t('from')}</label>
                             <input
                               type="date"
                               value={borrowDateFrom}
@@ -383,7 +385,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-medium text-gray-700">To</label>
+                            <label className="text-xs font-medium text-gray-700">{t('to')}</label>
                             <input
                               type="date"
                               value={borrowDateTo}
@@ -404,13 +406,13 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                       className="px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-1"
                     >
                       <img src="/return_book.png" alt="Return Date" className="w-4 h-4" />
-                      Return Date ▼
+                      {t('returnDateFilter')} ▼
                     </button>
                     {openDropdown === 'return' && (
                       <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-3 min-w-48">
                         <div className="space-y-2">
                           <div>
-                            <label className="text-xs font-medium text-gray-700">From</label>
+                            <label className="text-xs font-medium text-gray-700">{t('from')}</label>
                             <input
                               type="date"
                               value={returnDateFrom}
@@ -419,7 +421,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-medium text-gray-700">To</label>
+                            <label className="text-xs font-medium text-gray-700">{t('to')}</label>
                             <input
                               type="date"
                               value={returnDateTo}
@@ -445,10 +447,10 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
-                    title="Sort by borrow date, latest first"
+                    title={t('sortByBorrowDateLatest')}
                   >
                     <img src="/thirty-one-date.png" alt="Latest" className="w-4 h-4" />
-                    Borrow Date
+                    {t('borrowDateColumn')}
                   </button>
                   <button
                     onClick={() => {
@@ -460,10 +462,10 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
-                    title="Sort by borrow date, earliest first"
+                    title={t('sortByBorrowDateOldest')}
                   >
                     <img src="/number-1-date.png" alt="Oldest" className="w-4 h-4" />
-                    Borrow Date
+                    {t('borrowDateColumn')}
                   </button>
                   <button
                     onClick={() => {
@@ -475,10 +477,10 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
-                    title="Sort by return date, latest first"
+                    title={t('sortByReturnDateLatest')}
                   >
                     <img src="/thirty-one-date.png" alt="Latest" className="w-4 h-4" />
-                    Return Date
+                    {t('returnDateColumn')}
                   </button>
                   <button
                     onClick={() => {
@@ -490,10 +492,10 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}
-                    title="Sort by return date, earliest first"
+                    title={t('sortByReturnDateOldest')}
                   >
                     <img src="/number-1-date.png" alt="Oldest" className="w-4 h-4" />
-                    Return Date
+                    {t('returnDateColumn')}
                   </button>
                 </div>
               </div>
@@ -508,7 +510,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                         alt={statusFilter === 'borrowing' ? 'Borrowing' : 'Returned'}
                         className="w-4 h-4"
                       />
-                      <span>{statusFilter === 'borrowing' ? 'Borrowing' : 'Returned'}</span>
+                      <span>{statusFilter === 'borrowing' ? t('borrowing') : t('returned')}</span>
                       <button
                         onClick={() => setStatusFilter('all')}
                         className="hover:text-blue-900 font-bold"
@@ -590,14 +592,14 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gray-100 border-b border-gray-200">
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Book</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">User</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Borrow Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Return Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Borrow Note</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Return Note</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">Action</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">{t('borrowStatusTable')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">{t('bookColumn')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">{t('userColumn')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">{t('borrowDateColumn')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">{t('returnDateColumn')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">{t('borrowNoteColumn')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">{t('returnNoteColumn')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase">{t('actionColumn')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -617,11 +619,11 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                           </td>
                           <td className="px-4 py-3 text-sm">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">{book?.title || 'Unknown Book'}</span>
+                              <span className="font-medium text-gray-900">{book?.title || t('unknownBook')}</span>
                               <button
                                 onClick={() => setSelectedBookDetail(book || null)}
                                 className="text-blue-600 hover:text-blue-700 font-bold"
-                                title="View book details"
+                                title={t('viewBookDetails')}
                               >
                                 ℹ️
                               </button>
@@ -630,13 +632,13 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                           <td className="px-4 py-3 text-sm">
                             <div className="flex items-center gap-2">
                               <div>
-                                <p className="font-medium text-gray-900">{user?.full_name || 'Unknown'}</p>
+                                <p className="font-medium text-gray-900">{user?.full_name || t('unknown')}</p>
                                 {user?.department && <p className="text-xs text-gray-500">{user.department}</p>}
                               </div>
                               <button
                                 onClick={() => setSelectedUserDetail(user || null)}
                                 className="text-blue-600 hover:text-blue-700 font-bold"
-                                title="View user details"
+                                title={t('viewUserDetails')}
                               >
                                 ℹ️
                               </button>
@@ -669,7 +671,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                                 className="px-3 py-2 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center gap-2 transition"
                               >
                                 <img src="/return_book.png" alt="Return" className="w-3 h-3" />
-                                Return
+                                {t('returnBookButton')}
                               </button>
                             )}
                           </td>

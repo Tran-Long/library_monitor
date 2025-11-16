@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import type { Book, Shelf, Bookshelf, Library, Borrowing } from '@/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { borrowingService } from '@/services/api'
 
 interface DashboardClickableProps {
@@ -23,6 +24,7 @@ export default function DashboardClickable({
   onManageBooks,
   onManageUsers,
 }: DashboardClickableProps) {
+  const { t } = useLanguage()
   const [borrowings, setBorrowings] = useState<Borrowing[]>([])
 
   useEffect(() => {
@@ -58,15 +60,15 @@ export default function DashboardClickable({
           <div className="relative h-full p-8 flex flex-col justify-between group-hover:text-white transition-colors duration-300">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-gray-500 group-hover:text-green-100 transition-colors">Your Libraries</p>
+                <p className="text-sm font-semibold text-gray-500 group-hover:text-green-100 transition-colors">{t('yourLibraries')}</p>
                 <h3 className="text-3xl font-bold text-gray-900 group-hover:text-white mt-1 transition-colors">{libraries.length}</h3>
               </div>
               <img src="/library.png" alt="Library" className="w-12 h-12 opacity-75 group-hover:opacity-100 transition-opacity" />
             </div>
             
             <div>
-              <p className="text-lg font-semibold text-gray-700 group-hover:text-white transition-colors mb-1">{libraryBooks.length} Books</p>
-              <p className="text-sm text-gray-500 group-hover:text-green-100 transition-colors">Browse & manage your collections</p>
+              <p className="text-lg font-semibold text-gray-700 group-hover:text-white transition-colors mb-1">{libraryBooks.length} {t('manageBooks')}</p>
+              <p className="text-sm text-gray-500 group-hover:text-green-100 transition-colors">{t('browseManageCollections')}</p>
             </div>
           </div>
         </button>
@@ -83,15 +85,15 @@ export default function DashboardClickable({
           <div className="relative h-full p-8 flex flex-col justify-between group-hover:text-white transition-colors duration-300">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-gray-500 group-hover:text-purple-100 transition-colors">Active Borrowings</p>
+                <p className="text-sm font-semibold text-gray-500 group-hover:text-purple-100 transition-colors">{t('activeBorrowings')}</p>
                 <h3 className="text-3xl font-bold text-gray-900 group-hover:text-white mt-1 transition-colors">{currentBorrowings.length}</h3>
               </div>
               <div className="text-4xl opacity-75 group-hover:opacity-100 transition-opacity">📚</div>
             </div>
             
             <div>
-              <p className="text-sm text-gray-500 group-hover:text-purple-100 transition-colors">Books currently out</p>
-              <p className="text-xs text-gray-400 group-hover:text-purple-100 transition-colors">Manage borrowing sessions</p>
+              <p className="text-sm text-gray-500 group-hover:text-purple-100 transition-colors">{t('booksCurrentlyOut')}</p>
+              <p className="text-xs text-gray-400 group-hover:text-purple-100 transition-colors">{t('manageBorrowingSessions')}</p>
             </div>
           </div>
         </button>
@@ -99,7 +101,7 @@ export default function DashboardClickable({
 
       {/* Management Section */}
       <div className="space-y-4">
-        <h4 className="text-sm font-bold text-gray-600 uppercase tracking-wider px-2">Management Tools</h4>
+        <h4 className="text-sm font-bold text-gray-600 uppercase tracking-wider px-2">{t('managementTools')}</h4>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Manage Books Card */}
@@ -115,8 +117,8 @@ export default function DashboardClickable({
                 </svg>
               </div>
             </div>
-            <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">Manage Books</h3>
-            <p className="text-sm text-gray-500 mt-1">Add, edit, or remove books from your library</p>
+            <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{t('manageBooks')}</h3>
+            <p className="text-sm text-gray-500 mt-1">{t('addEditRemoveBooks')}</p>
           </button>
 
           {/* Manage Users Card */}
@@ -132,8 +134,8 @@ export default function DashboardClickable({
                 </svg>
               </div>
             </div>
-            <h3 className="font-semibold text-gray-900 group-hover:text-cyan-600 transition-colors">Manage Users</h3>
-            <p className="text-sm text-gray-500 mt-1">Create and manage user accounts and permissions</p>
+            <h3 className="font-semibold text-gray-900 group-hover:text-cyan-600 transition-colors">{t('manageUsers')}</h3>
+            <p className="text-sm text-gray-500 mt-1">{t('createManageUsers')}</p>
           </button>
         </div>
       </div>
@@ -142,15 +144,15 @@ export default function DashboardClickable({
       <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100">
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-900">{books.length}</p>
-          <p className="text-xs text-gray-500 mt-1">Total Books</p>
+          <p className="text-xs text-gray-500 mt-1">{t('totalBooks')}</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-900">{libraries.length}</p>
-          <p className="text-xs text-gray-500 mt-1">Libraries</p>
+          <p className="text-xs text-gray-500 mt-1">{t('libraries')}</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-900">{currentBorrowings.length}</p>
-          <p className="text-xs text-gray-500 mt-1">Out Now</p>
+          <p className="text-xs text-gray-500 mt-1">{t('outNow')}</p>
         </div>
       </div>
     </div>

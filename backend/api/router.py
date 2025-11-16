@@ -95,7 +95,11 @@ def create_library_bookshelf(request, library_id: int, payload: BookshelfCreateS
     # Override the library_id in the payload with the one from the URL
     data = payload.dict()
     data['library_id'] = library_id
-    bookshelf = Bookshelf.objects.create(**data)
+    # Remove any null or empty values that might cause issues
+    data = {k: v for k, v in data.items() if v is not None and v != ''}
+    # Remove library_id if it exists and create with library instead
+    data.pop('library_id', None)
+    bookshelf = Bookshelf.objects.create(library=library, **data)
     return bookshelf
 
 
@@ -256,6 +260,7 @@ def list_books(request, shelf_id: int = Query(None), status: str = Query(None)):
             'title': book.title,
             'author': book.author,
             'year': book.year,
+            'date_format': book.date_format,
             'short_description': book.short_description,
             'long_description': book.long_description,
             'status': book.status,
@@ -291,6 +296,7 @@ def get_books_by_status(request):
                 'title': book.title,
                 'author': book.author,
                 'year': book.year,
+                'date_format': book.date_format,
                 'short_description': book.short_description,
                 'long_description': book.long_description,
                 'status': book.status,
@@ -322,6 +328,7 @@ def list_storage_books(request):
             'title': book.title,
             'author': book.author,
             'year': book.year,
+            'date_format': book.date_format,
             'short_description': book.short_description,
             'long_description': book.long_description,
             'status': book.status,
@@ -390,11 +397,16 @@ def delete_book(request, book_id: int):
 @router.patch("/books/{book_id}/move/", response=BookSchema)
 def move_book(request, book_id: int, payload: BookMoveSchema):
     """Move a book to a shelf or to storage (shelf_id=None)."""
+    from django.http import JsonResponse
+    
     book = get_object_or_404(Book, id=book_id)
     
     # Prevent moving borrowed books
     if book.borrowed_by_user is not None:
-        raise ValueError(f"Cannot move borrowed book. Please return it first.")
+        return JsonResponse(
+            {"error": "Cannot move borrowed book. Please return it first."},
+            status=400
+        )
     
     if payload.shelf_id:
         shelf = get_object_or_404(Shelf, id=payload.shelf_id)
@@ -556,6 +568,7 @@ def borrow_book(request, book_id: int, user_id: int):
     """Borrow a book for a user."""
     from django.utils import timezone
     from datetime import datetime
+    from django.http import JsonResponse
     import json
     
     book = get_object_or_404(Book, id=book_id)
@@ -563,7 +576,10 @@ def borrow_book(request, book_id: int, user_id: int):
     
     # Check if book is already borrowed
     if book.borrowed_by_user is not None:
-        return {"error": f"Book is already borrowed by {book.borrowed_by_user.full_name}", "status": 400}, 400
+        return JsonResponse(
+            {"error": f"Book is already borrowed by {book.borrowed_by_user.full_name}"},
+            status=400
+        )
     
     # Get the request body
     body = {}

@@ -213,7 +213,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
               </button>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
-              <img src="/borrow.png" alt="Borrowed" className="w-8 h-8" /> {t('borrowed')}
+              <img src="/borrow.png" alt="Borrowed" className="w-8 h-8" /> {t('dashboardManageBorrowings')}
             </h1>
             <div></div>
           </div>

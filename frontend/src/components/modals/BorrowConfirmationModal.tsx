@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import type { Book, User } from '@/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 /**
  * Format a date string (YYYY-MM-DD) as dd/mm/yyyy
@@ -49,6 +50,7 @@ export const BorrowConfirmationModal: React.FC<BorrowConfirmationModalProps> = (
   onClose,
   onConfirm,
 }) => {
+  const { t } = useLanguage()
   const [borrowTime, setBorrowTime] = useState<Date>(new Date())
   const [notes, setNotes] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -110,7 +112,7 @@ export const BorrowConfirmationModal: React.FC<BorrowConfirmationModalProps> = (
       >
         <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <img src="/borrow.png" alt="Borrow Confirmation" className="w-6 h-6" /> Borrow Confirmation
+            <img src="/borrow.png" alt="Borrow Confirmation" className="w-6 h-6" /> {t('borrowConfirmation')}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
             ✕
@@ -140,7 +142,7 @@ export const BorrowConfirmationModal: React.FC<BorrowConfirmationModalProps> = (
               <button
                 onClick={() => setShowBookDetails(!showBookDetails)}
                 className="p-2 hover:bg-blue-200 rounded-full transition flex-shrink-0"
-                title="View book details"
+                title={t('viewBookDetails')}
               >
                 ℹ️
               </button>
@@ -152,12 +154,12 @@ export const BorrowConfirmationModal: React.FC<BorrowConfirmationModalProps> = (
                 <div className="space-y-2 text-sm">
                   {book.short_description && (
                     <p>
-                      <span className="font-semibold text-gray-700">Description:</span> {book.short_description}
+                      <span className="font-semibold text-gray-700">{t('description')}:</span> {book.short_description}
                     </p>
                   )}
                   {book.status && (
                     <p>
-                      <span className="font-semibold text-gray-700">Current Status:</span>{' '}
+                      <span className="font-semibold text-gray-700">{t('currentStatus')}:</span>{' '}
                       <span className="capitalize">{book.status}</span>
                     </p>
                   )}
@@ -195,7 +197,7 @@ export const BorrowConfirmationModal: React.FC<BorrowConfirmationModalProps> = (
               <button
                 onClick={() => setShowUserDetails(!showUserDetails)}
                 className="p-2 hover:bg-green-200 rounded-full transition flex-shrink-0"
-                title="View more details"
+                title={t('viewMoreDetails')}
               >
                 ℹ️
               </button>
@@ -207,17 +209,17 @@ export const BorrowConfirmationModal: React.FC<BorrowConfirmationModalProps> = (
                 <div className="space-y-2 text-sm">
                   {user.dob && (
                     <p>
-                      <span className="font-semibold text-gray-700">Date of Birth:</span> {user.dob}
+                      <span className="font-semibold text-gray-700">{t('dateOfBirth')}:</span> {user.dob}
                     </p>
                   )}
                   {user.short_description && (
                     <p>
-                      <span className="font-semibold text-gray-700">Description:</span> {user.short_description}
+                      <span className="font-semibold text-gray-700">{t('description')}:</span> {user.short_description}
                     </p>
                   )}
                   {user.long_description && (
                     <p>
-                      <span className="font-semibold text-gray-700">Details:</span> {user.long_description}
+                      <span className="font-semibold text-gray-700">{t('details')}:</span> {user.long_description}
                     </p>
                   )}
                 </div>
@@ -228,13 +230,13 @@ export const BorrowConfirmationModal: React.FC<BorrowConfirmationModalProps> = (
           {/* Borrow Information Group */}
           <div className="border border-purple-200 bg-purple-50 rounded-lg p-4">
             <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-              <img src="/borrow.png" alt="Borrow" className="w-6 h-6" /> Borrow Information
+              <img src="/borrow.png" alt="Borrow" className="w-6 h-6" /> {t('borrowInformation')}
             </h3>
             <div className="space-y-3">
               {/* Borrow Date & Time */}
               <div>
                 <p className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
-                  <img src="/schedule.png" alt="Date" className="w-3 h-3" /> Date & Time
+                  <img src="/schedule.png" alt="Date" className="w-3 h-3" /> {t('dateAndTime')}
                 </p>
                 <input
                   type="datetime-local"
@@ -255,12 +257,12 @@ export const BorrowConfirmationModal: React.FC<BorrowConfirmationModalProps> = (
               {/* Borrow Notes */}
               <div>
                 <p className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
-                  <img src="/note.png" alt="Notes" className="w-3 h-3" /> Notes (Optional)
+                  <img src="/note.png" alt="Notes" className="w-3 h-3" /> {t('notes')}
                 </p>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Add any notes about this borrowing session..."
+                  placeholder={t('addNotesPlaceholder')}
                   className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
                   rows={3}
                   disabled={isLoading}
@@ -283,14 +285,14 @@ export const BorrowConfirmationModal: React.FC<BorrowConfirmationModalProps> = (
               disabled={isLoading}
               className="px-6 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition disabled:opacity-50"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               onClick={handleConfirm}
               disabled={isLoading}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition disabled:opacity-50"
             >
-              {isLoading ? 'Lending...' : 'Confirm & Lend'}
+              {isLoading ? t('lending') : t('confirmAndLend')}
             </button>
           </div>
         </div>

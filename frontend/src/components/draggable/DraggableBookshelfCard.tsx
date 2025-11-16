@@ -51,7 +51,7 @@ export const DraggableBookshelfCard: React.FC<DraggableBookshelfCardProps> = ({
 
         {/* Content Area - Clickable */}
         <div className="flex-1 cursor-pointer" onClick={onSelect}>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-4">
             <span className="bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full">
               📚 {bookCount}
             </span>
@@ -61,7 +61,9 @@ export const DraggableBookshelfCard: React.FC<DraggableBookshelfCardProps> = ({
             </div>
           </div>
           {bookshelf.short_description && (
-            <p className="text-gray-600 text-sm mt-1">{bookshelf.short_description}</p>
+            <p className="text-sm text-gray-700 border-t border-gray-200 pt-2">
+              {bookshelf.short_description}
+            </p>
           )}
         </div>
 

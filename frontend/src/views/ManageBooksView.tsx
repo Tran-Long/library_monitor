@@ -94,8 +94,32 @@ export function ManageBooksView({
   const [columnsView, setColumnsView] = useState<1 | 2>(1)
   const [libraryPopupBookId, setLibraryPopupBookId] = useState<number | null>(null)
   const [borrowedPopupBookId, setBorrowedPopupBookId] = useState<number | null>(null)
+  const [dateFilterType, setDateFilterType] = useState<'none' | 'date_month_year' | 'month_year' | 'quarter_year' | 'year'>('none')
+  const [dateFilterFrom, setDateFilterFrom] = useState<string>('')
+  const [dateFilterTo, setDateFilterTo] = useState<string>('')
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
 
   const { t } = useLanguage()
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      const isDropdownButton = target.closest('[data-dropdown-button]')
+      const isDropdownContent = target.closest('[data-dropdown-content]')
+      
+      if (!isDropdownButton && !isDropdownContent) {
+        setOpenDropdown(null)
+      }
+    }
+
+    if (openDropdown) {
+      document.addEventListener('click', handleClickOutside)
+      return () => {
+        document.removeEventListener('click', handleClickOutside)
+      }
+    }
+  }, [openDropdown])
 
   // Close popup when clicking outside
   useEffect(() => {
@@ -123,12 +147,12 @@ export function ManageBooksView({
     const isBorrowed = book.borrowed_by_user_id !== null && book.borrowed_by_user_id !== undefined
     
     if (book.status === 'storage') {
-      return { label: t('storage'), color: 'bg-blue-50 text-blue-700 border border-blue-200', icon: '/box.png', iconAlt: t('storage') }
+      return { label: t('manageBooksStatusStorage'), color: 'bg-blue-50 text-blue-700 border border-blue-200', icon: '/box.png', iconAlt: t('storage') }
     }
     if (isBorrowed || book.status === 'borrowed') {
-      return { label: t('borrowed'), color: 'bg-purple-50 text-purple-700 border border-purple-200', icon: '/borrow.png', iconAlt: t('borrowed') }
+      return { label: t('manageBooksStatusBorrowing'), color: 'bg-purple-50 text-purple-700 border border-purple-200', icon: '/borrow.png', iconAlt: t('borrowed') }
     }
-    return { label: t('library'), color: 'bg-green-50 text-green-700 border border-green-200', icon: '/library.png', iconAlt: t('library') }           
+    return { label: t('manageBooksStatusLibrary'), color: 'bg-green-50 text-green-700 border border-green-200', icon: '/library.png', iconAlt: t('library') }           
   }
 
   // Get available bookshelves for selected library
@@ -193,6 +217,64 @@ export function ManageBooksView({
       )
     }
 
+    // Date filter based on selected filter type
+    if (dateFilterType !== 'none') {
+      // Only show books with matching date format
+      if (book.date_format !== dateFilterType) return false
+      
+      if (book.year) {
+        const bookDate = new Date(book.year)
+        const bookYear = bookDate.getFullYear()
+        const bookMonth = bookDate.getMonth() + 1
+        const bookDay = bookDate.getDate()
+        
+        if (dateFilterType === 'date_month_year') {
+          // Filter by full date range
+          if (dateFilterFrom) {
+            const fromDate = new Date(dateFilterFrom)
+            if (bookDate < fromDate) return false
+          }
+          if (dateFilterTo) {
+            const toDate = new Date(dateFilterTo)
+            if (bookDate > toDate) return false
+          }
+        } else if (dateFilterType === 'month_year') {
+          // Filter by month and year
+          if (dateFilterFrom) {
+            const [fromYear, fromMonth] = dateFilterFrom.split('-').map(Number)
+            if (bookYear < fromYear || (bookYear === fromYear && bookMonth < fromMonth)) return false
+          }
+          if (dateFilterTo) {
+            const [toYear, toMonth] = dateFilterTo.split('-').map(Number)
+            if (bookYear > toYear || (bookYear === toYear && bookMonth > toMonth)) return false
+          }
+        } else if (dateFilterType === 'quarter_year') {
+          // Filter by quarter and year
+          const getQuarter = (month: number) => Math.ceil(month / 3)
+          const bookQuarter = getQuarter(bookMonth)
+          
+          if (dateFilterFrom) {
+            const [fromYear, fromQuarter] = dateFilterFrom.split('-Q').map(Number)
+            if (bookYear < fromYear || (bookYear === fromYear && bookQuarter < fromQuarter)) return false
+          }
+          if (dateFilterTo) {
+            const [toYear, toQuarter] = dateFilterTo.split('-Q').map(Number)
+            if (bookYear > toYear || (bookYear === toYear && bookQuarter > toQuarter)) return false
+          }
+        } else if (dateFilterType === 'year') {
+          // Filter by year only
+          if (dateFilterFrom) {
+            const fromYear = parseInt(dateFilterFrom, 10)
+            if (bookYear < fromYear) return false
+          }
+          if (dateFilterTo) {
+            const toYear = parseInt(dateFilterTo, 10)
+            if (bookYear > toYear) return false
+          }
+        }
+      }
+    }
+
     return true
   }).sort((a, b) => {
     let compareResult = 0
@@ -225,7 +307,7 @@ export function ManageBooksView({
               </button>
             </div>
             <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2">
-              📚 {t('manageBooks')}
+              📚 {t('manageBooksTitle')}
             </h1>
             <div>
               <button
@@ -284,7 +366,7 @@ export function ManageBooksView({
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Compact Search, Filter, and Sort Section */}
+            {/* Search, Filter, and Sort Section */}
             <div className="bg-white rounded-lg shadow p-4 space-y-3">
               {/* Search Bar */}
               <div className="flex gap-2">
@@ -297,77 +379,418 @@ export function ManageBooksView({
                 />
               </div>
 
-              {/* Status and Sort Controls */}
+              {/* Filter Dropdowns and Sort Controls */}
               <div className="flex flex-wrap gap-2 items-center">
-                {/* Status Filter Buttons */}
-                <div className="flex gap-1 flex-wrap">
+                {/* Status Filter Dropdown */}
+                <div className="relative">
                   <button
-                    onClick={() => {
-                      setStatusFilter('all')
-                      setSelectedLibrary(null)
-                      setSelectedBookshelf(null)
-                      setSelectedShelf(null)
-                      setSelectedUser(null)
-                    }}
-                    className={`px-3 py-1 rounded text-xs font-medium transition ${
-                      statusFilter === 'all'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
+                    data-dropdown-button="status"
+                    onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
+                    className="px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
                   >
-                    {t('all')}
+                    {t('manageBooksFilterStatus')} ▼
                   </button>
+                  {openDropdown === 'status' && (
+                    <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 min-w-40">
+                      <button
+                        onClick={() => {
+                          setStatusFilter('all')
+                          setSelectedLibrary(null)
+                          setSelectedBookshelf(null)
+                          setSelectedShelf(null)
+                          setSelectedUser(null)
+                          setOpenDropdown(null)
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm transition ${statusFilter === 'all' ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                      >
+                        {t('all')}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setStatusFilter('storage')
+                          setSelectedLibrary(null)
+                          setSelectedBookshelf(null)
+                          setSelectedShelf(null)
+                          setSelectedUser(null)
+                          setOpenDropdown(null)
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm transition ${statusFilter === 'storage' ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                      >
+                        <img src="/box.png" alt="Storage" className="w-4 h-4 inline-block mr-2" />
+                        {t('manageBooksStatusStorage')}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setStatusFilter('library')
+                          setSelectedLibrary(null)
+                          setSelectedBookshelf(null)
+                          setSelectedShelf(null)
+                          setSelectedUser(null)
+                          setOpenDropdown(null)
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm transition ${statusFilter === 'library' ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                      >
+                        <img src="/library.png" alt="Library" className="w-4 h-4 inline-block mr-2" />
+                        {t('manageBooksStatusLibrary')}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setStatusFilter('borrowed')
+                          setSelectedLibrary(null)
+                          setSelectedBookshelf(null)
+                          setSelectedShelf(null)
+                          setSelectedUser(null)
+                          setOpenDropdown(null)
+                        }}
+                        className={`block w-full text-left px-4 py-2 text-sm transition ${statusFilter === 'borrowed' ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                      >
+                        <img src="/borrow.png" alt="Borrowed" className="w-4 h-4 inline-block mr-2" />
+                        {t('manageBooksStatusBorrowing')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Library Filter Dropdown (only for Library status) */}
+                {statusFilter === 'library' && (
+                  <div className="relative">
+                    <button
+                      data-dropdown-button="library"
+                      onClick={() => setOpenDropdown(openDropdown === 'library' ? null : 'library')}
+                      className="px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                    >
+                      🏛️ {t('library')} ▼
+                    </button>
+                    {openDropdown === 'library' && (
+                      <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-40">
+                        <button
+                          onClick={() => {
+                            setSelectedLibrary(null)
+                            setSelectedBookshelf(null)
+                            setSelectedShelf(null)
+                            setOpenDropdown(null)
+                          }}
+                          className={`block w-full text-left px-4 py-2 text-sm transition ${selectedLibrary === null ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                        >
+                          {t('allLibrariesFilter')}
+                        </button>
+                        {libraries.map((lib) => (
+                          <button
+                            key={lib.id}
+                            onClick={() => {
+                              setSelectedLibrary(lib.id)
+                              setSelectedBookshelf(null)
+                              setSelectedShelf(null)
+                              setOpenDropdown(null)
+                            }}
+                            className={`block w-full text-left px-4 py-2 text-sm transition ${selectedLibrary === lib.id ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                          >
+                            {lib.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Bookshelf Filter Dropdown */}
+                {statusFilter === 'library' && selectedLibrary && (
+                  <div className="relative">
+                    <button
+                      data-dropdown-button="bookshelf"
+                      onClick={() => setOpenDropdown(openDropdown === 'bookshelf' ? null : 'bookshelf')}
+                      className="px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                    >
+                      📚 {t('bookshelf')} ▼
+                    </button>
+                    {openDropdown === 'bookshelf' && (
+                      <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-40">
+                        <button
+                          onClick={() => {
+                            setSelectedBookshelf(null)
+                            setSelectedShelf(null)
+                            setOpenDropdown(null)
+                          }}
+                          className={`block w-full text-left px-4 py-2 text-sm transition ${selectedBookshelf === null ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                        >
+                          {t('allBookshelvesFilter')}
+                        </button>
+                        {availableBookshelves.map((bs) => (
+                          <button
+                            key={bs.id}
+                            onClick={() => {
+                              setSelectedBookshelf(bs.id)
+                              setSelectedShelf(null)
+                              setOpenDropdown(null)
+                            }}
+                            className={`block w-full text-left px-4 py-2 text-sm transition ${selectedBookshelf === bs.id ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                          >
+                            {bs.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Shelf Filter Dropdown */}
+                {statusFilter === 'library' && selectedBookshelf && (
+                  <div className="relative">
+                    <button
+                      data-dropdown-button="shelf"
+                      onClick={() => setOpenDropdown(openDropdown === 'shelf' ? null : 'shelf')}
+                      className="px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                    >
+                      🗂️ {t('shelf')} ▼
+                    </button>
+                    {openDropdown === 'shelf' && (
+                      <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-40">
+                        <button
+                          onClick={() => {
+                            setSelectedShelf(null)
+                            setOpenDropdown(null)
+                          }}
+                          className={`block w-full text-left px-4 py-2 text-sm transition ${selectedShelf === null ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                        >
+                          {t('allShelvesFilter')}
+                        </button>
+                        {availableShelves.map((shelf) => (
+                          <button
+                            key={shelf.id}
+                            onClick={() => {
+                              setSelectedShelf(shelf.id)
+                              setOpenDropdown(null)
+                            }}
+                            className={`block w-full text-left px-4 py-2 text-sm transition ${selectedShelf === shelf.id ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                          >
+                            #{shelf.order} {shelf.name ? `: ${shelf.name}` : ''}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* User Filter Dropdown (only for Borrowed status) */}
+                {statusFilter === 'borrowed' && (
+                  <div className="relative">
+                    <button
+                      data-dropdown-button="user"
+                      onClick={() => setOpenDropdown(openDropdown === 'user' ? null : 'user')}
+                      className="px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                    >
+                      👤 {t('user')} ▼
+                    </button>
+                    {openDropdown === 'user' && (
+                      <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-40">
+                        <button
+                          onClick={() => {
+                            setSelectedUser(null)
+                            setOpenDropdown(null)
+                          }}
+                          className={`block w-full text-left px-4 py-2 text-sm transition ${selectedUser === null ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                        >
+                          {t('allUsersFilter')}
+                        </button>
+                        {books
+                          .filter(b => b.status === 'borrowed' && b.borrowed_by_user_name)
+                          .reduce((unique: Array<{ id: number; name: string }>, book) => {
+                            if (!unique.find(u => u.id === book.borrowed_by_user_id)) {
+                              unique.push({ id: book.borrowed_by_user_id!, name: book.borrowed_by_user_name! })
+                            }
+                            return unique
+                          }, [])
+                          .sort((a, b) => a.name.localeCompare(b.name))
+                          .map((user) => (
+                            <button
+                              key={user.id}
+                              onClick={() => {
+                                setSelectedUser(user.id)
+                                setOpenDropdown(null)
+                              }}
+                              className={`block w-full text-left px-4 py-2 text-sm transition ${selectedUser === user.id ? 'bg-blue-50 text-blue-700 font-medium' : 'hover:bg-gray-50'}`}
+                            >
+                              {user.name}
+                            </button>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Date Filter Dropdown */}
+                <div className="relative">
                   <button
-                    onClick={() => {
-                      setStatusFilter('storage')
-                      setSelectedLibrary(null)
-                      setSelectedBookshelf(null)
-                      setSelectedShelf(null)
-                      setSelectedUser(null)
-                    }}
-                    className={`px-3 py-1 rounded text-xs font-medium transition ${
-                      statusFilter === 'storage'
-                        ? 'bg-red-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
+                    data-dropdown-button="date"
+                    onClick={() => setOpenDropdown(openDropdown === 'date' ? null : 'date')}
+                    className="px-3 py-1 rounded text-xs font-medium bg-gray-200 text-gray-700 hover:bg-gray-300 transition flex items-center gap-1"
                   >
-                    <img src="/box.png" alt="Storage" className="w-4 h-4 inline-block mr-1" />
-                    {t('storage')}
+                    <img src="/calendar.png" alt="Date" className="w-4 h-4" />
+                    {t('manageBooksFilterTime')} ▼
                   </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter('library')
-                      setSelectedLibrary(null)
-                      setSelectedBookshelf(null)
-                      setSelectedShelf(null)
-                      setSelectedUser(null)
-                    }}
-                    className={`px-3 py-1 rounded text-xs font-medium transition ${
-                      statusFilter === 'library'
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    <img src="/library.png" alt="Library" className="w-4 h-4 inline-block mr-1" />
-                    {t('libraries')}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setStatusFilter('borrowed')
-                      setSelectedLibrary(null)
-                      setSelectedBookshelf(null)
-                      setSelectedShelf(null)
-                      setSelectedUser(null)
-                    }}
-                    className={`px-3 py-1 rounded text-xs font-medium transition ${
-                      statusFilter === 'borrowed'
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    <img src="/borrow.png" alt="Borrowed" className="w-4 h-4 inline-block mr-1" />
-                    {t('borrowed')}
-                  </button>
+                  {openDropdown === 'date' && (
+                    <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-3 min-w-64">
+                      <div className="space-y-2">
+                        <select
+                          value={dateFilterType}
+                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                            setDateFilterType(e.target.value as 'none' | 'date_month_year' | 'month_year' | 'quarter_year' | 'year')
+                            setDateFilterFrom('')
+                            setDateFilterTo('')
+                          }}
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                          <option value="none">{t('manageBooksFilterNone')}</option>
+                          <option value="date_month_year">{t('manageBooksFilterDate')}</option>
+                          <option value="month_year">{t('manageBooksFilterMonth')}</option>
+                          <option value="quarter_year">{t('manageBooksFilterQuarter')}</option>
+                          <option value="year">{t('manageBooksFilterYear')}</option>
+                        </select>
+
+                        {dateFilterType === 'date_month_year' && (
+                          <>
+                            <div>
+                              <label className="text-xs font-medium text-gray-700">{t('from')}</label>
+                              <input
+                                type="date"
+                                value={dateFilterFrom}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateFilterFrom(e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-gray-700">{t('to')}</label>
+                              <input
+                                type="date"
+                                value={dateFilterTo}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateFilterTo(e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {dateFilterType === 'month_year' && (
+                          <>
+                            <div>
+                              <label className="text-xs font-medium text-gray-700">{t('from')}</label>
+                              <input
+                                type="month"
+                                value={dateFilterFrom}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateFilterFrom(e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-gray-700">{t('to')}</label>
+                              <input
+                                type="month"
+                                value={dateFilterTo}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateFilterTo(e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {dateFilterType === 'quarter_year' && (
+                          <>
+                            <div>
+                              <label className="text-xs font-medium text-gray-700">{t('from')}</label>
+                              <div className="flex gap-1">
+                                <select
+                                  value={dateFilterFrom ? dateFilterFrom.split('-')[1] : ''}
+                                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                    const year = dateFilterFrom ? dateFilterFrom.split('-')[0] : new Date().getFullYear()
+                                    setDateFilterFrom(e.target.value ? `${year}-${e.target.value}` : '')
+                                  }}
+                                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                >
+                                  <option value="">Q</option>
+                                  <option value="Q1">Q1</option>
+                                  <option value="Q2">Q2</option>
+                                  <option value="Q3">Q3</option>
+                                  <option value="Q4">Q4</option>
+                                </select>
+                                <input
+                                  type="number"
+                                  min="1900"
+                                  max="2099"
+                                  value={dateFilterFrom ? dateFilterFrom.split('-')[0] : ''}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    const quarter = dateFilterFrom ? dateFilterFrom.split('-')[1] : 'Q1'
+                                    setDateFilterFrom(e.target.value ? `${e.target.value}-${quarter}` : '')
+                                  }}
+                                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                  placeholder="Year"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-gray-700">{t('to')}</label>
+                              <div className="flex gap-1">
+                                <select
+                                  value={dateFilterTo ? dateFilterTo.split('-')[1] : ''}
+                                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                    const year = dateFilterTo ? dateFilterTo.split('-')[0] : new Date().getFullYear()
+                                    setDateFilterTo(e.target.value ? `${year}-${e.target.value}` : '')
+                                  }}
+                                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                >
+                                  <option value="">Q</option>
+                                  <option value="Q1">Q1</option>
+                                  <option value="Q2">Q2</option>
+                                  <option value="Q3">Q3</option>
+                                  <option value="Q4">Q4</option>
+                                </select>
+                                <input
+                                  type="number"
+                                  min="1900"
+                                  max="2099"
+                                  value={dateFilterTo ? dateFilterTo.split('-')[0] : ''}
+                                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                    const quarter = dateFilterTo ? dateFilterTo.split('-')[1] : 'Q4'
+                                    setDateFilterTo(e.target.value ? `${e.target.value}-${quarter}` : '')
+                                  }}
+                                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs"
+                                  placeholder="Year"
+                                />
+                              </div>
+                            </div>
+                          </>
+                        )}
+
+                        {dateFilterType === 'year' && (
+                          <>
+                            <div>
+                              <label className="text-xs font-medium text-gray-700">{t('from')}</label>
+                              <input
+                                type="number"
+                                min="1900"
+                                max="2099"
+                                placeholder={t('year')}
+                                value={dateFilterFrom}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateFilterFrom(e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-medium text-gray-700">{t('to')}</label>
+                              <input
+                                type="number"
+                                min="1900"
+                                max="2099"
+                                placeholder={t('year')}
+                                value={dateFilterTo}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDateFilterTo(e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Sort Controls */}
@@ -431,94 +854,128 @@ export function ManageBooksView({
                 </div>
               </div>
 
-              {/* Library/Bookshelf/Shelf Filter (only for Library status) */}
-              {statusFilter === 'library' && (
-                <div className="flex flex-wrap gap-2 pt-2 border-t">
-                  <select
-                    value={selectedLibrary || ''}
-                    onChange={(e) => {
-                      setSelectedLibrary(e.target.value ? parseInt(e.target.value) : null)
-                      setSelectedBookshelf(null)
-                      setSelectedShelf(null)
-                    }}
-                    className="px-3 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">{t('allLibrariesFilter')}</option>
-                    {libraries.map((lib) => (
-                      <option key={lib.id} value={lib.id}>
-                        {lib.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  {selectedLibrary && (
-                    <select
-                      value={selectedBookshelf || ''}
-                      onChange={(e) => {
-                        setSelectedBookshelf(e.target.value ? parseInt(e.target.value) : null)
-                        setSelectedShelf(null)
-                      }}
-                      className="px-3 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">{t('allBookshelvesFilter')}</option>
-                      {availableBookshelves.map((bs) => (
-                        <option key={bs.id} value={bs.id}>
-                          {bs.name}
-                        </option>
-                      ))}
-                    </select>
+              {/* Active Filters Display */}
+              {(statusFilter !== 'all' || searchTerm || selectedLibrary || selectedBookshelf || selectedShelf || selectedUser || dateFilterType !== 'none') && (
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-200">
+                  {statusFilter !== 'all' && (
+                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
+                      <div className="flex items-center gap-1">
+                        {statusFilter === 'storage' && <img src="/box.png" alt="Storage" className="w-4 h-4" />}
+                        {statusFilter === 'library' && <img src="/library.png" alt="Library" className="w-4 h-4" />}
+                        {statusFilter === 'borrowing' && <img src="/borrow.png" alt="Borrowing" className="w-4 h-4" />}
+                        <span>{statusFilter}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setStatusFilter('all')
+                          setSelectedLibrary(null)
+                          setSelectedBookshelf(null)
+                          setSelectedShelf(null)
+                          setSelectedUser(null)
+                        }}
+                        className="hover:text-blue-900 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   )}
-
+                  {selectedLibrary && (
+                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
+                      <span>🏛️ {libraries.find(l => l.id === selectedLibrary)?.name}</span>
+                      <button
+                        onClick={() => {
+                          setSelectedLibrary(null)
+                          setSelectedBookshelf(null)
+                          setSelectedShelf(null)
+                        }}
+                        className="hover:text-blue-900 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
                   {selectedBookshelf && (
-                    <select
-                      value={selectedShelf || ''}
-                      onChange={(e) => {
-                        setSelectedShelf(e.target.value ? parseInt(e.target.value) : null)
-                      }}
-                      className="px-3 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    >
-                      <option value="">{t('allShelvesFilter')}</option>
-                      {availableShelves.map((shelf) => (
-                        <option key={shelf.id} value={shelf.id}>
-                          #{shelf.order} {shelf.name ? `: ${shelf.name}` : ''}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
+                      <span>📚 {allBookshelves.find(bs => bs.id === selectedBookshelf)?.name}</span>
+                      <button
+                        onClick={() => {
+                          setSelectedBookshelf(null)
+                          setSelectedShelf(null)
+                        }}
+                        className="hover:text-blue-900 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  {selectedShelf && (
+                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
+                      <span>🗂️ #{allShelves.find(s => s.id === selectedShelf)?.order} {allShelves.find(s => s.id === selectedShelf)?.name}</span>
+                      <button
+                        onClick={() => setSelectedShelf(null)}
+                        className="hover:text-blue-900 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  {selectedUser && (
+                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
+                      <span>👤 {books.find(b => b.borrowed_by_user_id === selectedUser)?.borrowed_by_user_name}</span>
+                      <button
+                        onClick={() => setSelectedUser(null)}
+                        className="hover:text-blue-900 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  {searchTerm && (
+                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
+                      <span>🔍 {searchTerm}</span>
+                      <button
+                        onClick={() => setSearchTerm('')}
+                        className="hover:text-blue-900 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
+                  {dateFilterType !== 'none' && (
+                    <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
+                      <span>
+                        {dateFilterType === 'date_month_year' && (
+                          <>Full Date: {dateFilterFrom && dateFilterTo ? `${dateFilterFrom} - ${dateFilterTo}` : dateFilterFrom || dateFilterTo || 'All'}</>
+                        )}
+                        {dateFilterType === 'month_year' && (
+                          <>Month/Year: {dateFilterFrom && dateFilterTo ? `${dateFilterFrom} - ${dateFilterTo}` : dateFilterFrom || dateFilterTo || 'All'}</>
+                        )}
+                        {dateFilterType === 'quarter_year' && (
+                          <>Quarter/Year: {dateFilterFrom && dateFilterTo ? `${dateFilterFrom} - ${dateFilterTo}` : dateFilterFrom || dateFilterTo || 'All'}</>
+                        )}
+                        {dateFilterType === 'year' && (
+                          <>Year: {dateFilterFrom && dateFilterTo ? `${dateFilterFrom} - ${dateFilterTo}` : dateFilterFrom || dateFilterTo || 'All'}</>
+                        )}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setDateFilterType('none')
+                          setDateFilterFrom('')
+                          setDateFilterTo('')
+                        }}
+                        className="hover:text-blue-900 font-bold"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
 
-              {/* User Filter (only for Borrowed status) */}
-              {statusFilter === 'borrowed' && (
-                <div className="flex flex-wrap gap-2 pt-2 border-t">
-                  <select
-                    value={selectedUser || ''}
-                    onChange={(e) => {
-                      setSelectedUser(e.target.value ? parseInt(e.target.value) : null)
-                    }}
-                    className="px-3 py-1 border border-gray-300 rounded text-xs focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">{t('allUsersFilter')}</option>
-                    {books
-                      .filter(b => b.status === 'borrowed' && b.borrowed_by_user_name)
-                      .reduce((unique: Array<{ id: number; name: string }>, book) => {
-                        if (!unique.find(u => u.id === book.borrowed_by_user_id)) {
-                          unique.push({ id: book.borrowed_by_user_id!, name: book.borrowed_by_user_name! })
-                        }
-                        return unique
-                      }, [])
-                      .sort((a, b) => a.name.localeCompare(b.name))
-                      .map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              )}              {/* Results Count */}
+              {/* Results Count and Layout Toggle */}
               <div className="flex items-center justify-between pt-2 border-t">
                 <span className="text-xs text-gray-500">
-                  {filteredBooks.length} of {books.length} books
+                  {filteredBooks.length} / {books.length} {t('books')}
                 </span>
                 {/* Layout toggle buttons */}
                 <div className="flex gap-0.5 bg-gray-100 p-0.5 rounded">
@@ -726,8 +1183,7 @@ export function ManageBooksView({
                                       {book.borrowed_by_user_name ? (
                                         <div className="text-sm">
                                           <p className="text-gray-600 font-medium">{t('borrowedByLabel')}</p>
-                                          <p className="text-purple-600 font-semibold flex items-center gap-2 mt-1">
-                                            <img src="/user.png" alt="User" className="w-4 h-4" />
+                                          <p className="text-purple-600 font-semibold mt-1">
                                             {book.borrowed_by_user_name}
                                           </p>
                                         </div>

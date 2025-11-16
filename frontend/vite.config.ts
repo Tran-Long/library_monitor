@@ -15,6 +15,11 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
+    allowedHosts: [
+      'localhost',
+      '127.0.0.1',
+      'pseudoapoplectical-dactylographic-tami.ngrok-free.dev',
+    ],
     proxy: {
       '/api': {
         target: 'http://backend:8000',

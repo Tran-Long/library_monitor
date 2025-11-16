@@ -1,5 +1,6 @@
 import React from 'react'
 import type { Book } from '@/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 /**
  * Format a date string (YYYY-MM-DD) as dd/mm/yyyy
@@ -33,6 +34,8 @@ interface BookDetailModalProps {
 }
 
 export const BookDetailModal: React.FC<BookDetailModalProps> = ({ book, onClose }) => {
+  const { t } = useLanguage()
+  
   if (!book) return null
 
   return (
@@ -40,7 +43,7 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({ book, onClose 
       <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Anchored Header */}
         <div className="sticky top-0 bg-gradient-to-r from-blue-500 to-blue-600 p-4 text-white flex justify-between items-center flex-shrink-0 z-10">
-          <h2 className="text-2xl font-bold">📚 Book Details</h2>
+          <h2 className="text-2xl font-bold">📚 {t('bookDetails')}</h2>
           <button onClick={onClose} className="text-white hover:bg-blue-700 p-1 rounded transition-colors text-2xl">
             ✕
           </button>
@@ -50,31 +53,31 @@ export const BookDetailModal: React.FC<BookDetailModalProps> = ({ book, onClose 
         <div className="overflow-y-auto flex-1 p-6 space-y-5">
           {/* Title */}
           <div>
-            <h3 className="font-semibold text-gray-700 text-lg">Title</h3>
+            <h3 className="font-semibold text-gray-700 text-lg">{t('bookTitleLabel')}</h3>
             <p className="text-gray-600 mt-2 text-base">{book.title || '-'}</p>
           </div>
 
           {/* Author */}
           <div>
-            <h3 className="font-semibold text-gray-700 text-lg">Author</h3>
+            <h3 className="font-semibold text-gray-700 text-lg">{t('authorLabel')}</h3>
             <p className="text-gray-600 mt-2 text-base">{book.author || '-'}</p>
           </div>
 
           {/* Year */}
           <div>
-            <h3 className="font-semibold text-gray-700 text-lg">Year</h3>
+            <h3 className="font-semibold text-gray-700 text-lg">{t('publicationDateLabel')}</h3>
             <p className="text-gray-600 mt-2 text-base">{formatDateAsddmmyy(book.year)}</p>
           </div>
 
           {/* Short Description */}
           <div>
-            <h3 className="font-semibold text-gray-700 text-lg">Short Description</h3>
+            <h3 className="font-semibold text-gray-700 text-lg">{t('shortDescriptionLabel')}</h3>
             <p className="text-gray-600 mt-2 text-base">{book.short_description || '-'}</p>
           </div>
 
           {/* Long Description */}
           <div>
-            <h3 className="font-semibold text-gray-700 text-lg">Long Description</h3>
+            <h3 className="font-semibold text-gray-700 text-lg">{t('longDescriptionLabel')}</h3>
             <p className="text-gray-600 mt-2 text-base whitespace-pre-wrap">{book.long_description || '-'}</p>
           </div>
         </div>

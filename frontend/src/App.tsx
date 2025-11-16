@@ -9,7 +9,7 @@ import { LanguageProvider, useLanguage } from '@/contexts/LanguageContext'
 import { LanguageSwitcher } from '@/components/LanguageSwitcher'
 // Import new modular components
 import { DraggableLibraryCard, DraggableBookshelfCard, DraggableShelfCard } from '@/components/draggable'
-import { BookDetailModal, BorrowBookModal, BorrowConfirmationModal, ReturnConfirmationModal, MoveBookModal } from '@/components/modals'
+import { BookDetailModal, BorrowBookModal, BorrowConfirmationModal, ReturnConfirmationModal, MoveBookModal, DeleteWithMoveBooksModal } from '@/components/modals'
 // Import extracted views (Phase 3)
 import { BorrowedView, ManageUsersView, ManageBooksView, LibrariesView } from '@/views'
 
@@ -108,6 +108,15 @@ function AppContent() {
   })
   const [expandedBookshelves, setExpandedBookshelves] = useState<Set<number>>(new Set())
   
+  // Delete confirmation modal states
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteModalData, setDeleteModalData] = useState<{
+    type: 'library' | 'bookshelf' | 'shelf'
+    id: number
+    name: string
+    books: Book[]
+  } | null>(null)
+  
   // Wrapper to persist nav pane state to localStorage
   const setShowNavPane = (value: boolean | ((prev: boolean) => boolean)) => {
     setShowNavPaneState((prev: boolean) => {
@@ -146,7 +155,8 @@ function AppContent() {
     year: '',
     short_description: '',
     long_description: '',
-    targetShelf: '' // 'storage', 'library:{id}', 'bookshelf:{id}', 'shelf:{id}'
+    targetShelf: '', // 'storage', 'library:{id}', 'bookshelf:{id}', 'shelf:{id}'
+    date_format: 'date_month_year'
   })
   const [userFormData, setUserFormData] = useState({
     full_name: '',
@@ -324,6 +334,16 @@ function AppContent() {
     loadInitialData()
   }, [fetchBorrowings])
 
+  // Restore state from URL on initial mount (before libraries load)
+  useEffect(() => {
+    const path = window.location.pathname
+    const parts = path.split('/').filter(p => p)
+    if (parts.length > 0) {
+      const tab = parts[0] as 'dashboard' | 'libraries' | 'borrowed' | 'manage-books' | 'manage-users'
+      setActiveMainTab(tab)
+    }
+  }, []) // Run once on mount
+
   // Refresh borrowings when switching to manage-books tab
   useEffect(() => {
     if (activeMainTab === 'manage-books') {
@@ -410,7 +430,9 @@ function AppContent() {
       const borrowedBooks = data.filter((b: any) => b.status === 'borrowed')
       console.log('Borrowed books:', borrowedBooks)
       setBooks(data)
+      setError(null)
     } catch (err) {
+      setError(`Failed to load books: ${err instanceof Error ? err.message : 'Unknown error'}`)
       console.error('Failed to load books:', err)
     }
   }
@@ -436,14 +458,35 @@ function AppContent() {
   }
 
   const handleDeleteLibrary = async (id: number) => {
-    if (!window.confirm('Delete this library? This action cannot be undone.')) return
     try {
-      const response = await fetch(`/api/libraries/${id}/`, { method: 'DELETE' })
-      if (!response.ok) throw new Error(`API error: ${response.status}`)
-      setSelectedLibrary(null)
-      await loadLibraries()
+      // Fetch all books in this library (through all bookshelves and shelves)
+      const shelvesInLibrary = allShelves.filter(s => {
+        const bs = allBookshelves.find(b => b.id === s.bookshelf_id)
+        return bs && bs.library_id === id
+      })
+      
+      // Fetch all books for each shelf
+      let libraryBooks: Book[] = []
+      for (const shelf of shelvesInLibrary) {
+        const response = await fetch(`/api/books/?shelf_id=${shelf.id}`)
+        if (response.ok) {
+          const booksData = await response.json()
+          libraryBooks = [...libraryBooks, ...booksData]
+        }
+      }
+      
+      const library = libraries.find(lib => lib.id === id)
+      if (!library) return
+      
+      setDeleteModalData({
+        type: 'library',
+        id,
+        name: library.name,
+        books: libraryBooks
+      })
+      setShowDeleteModal(true)
     } catch (err) {
-      setError(`Failed to delete library: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setError(`Failed to prepare deletion: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
@@ -523,8 +566,12 @@ function AppContent() {
           library_id: selectedLibrary.id
         })
       })
-      if (!response.ok) throw new Error(`API error: ${response.status}`)
-      setBookshelfFormData({ name: '', description: '' })
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || errorData.detail || errorData.message || `API error: ${response.status}`
+        throw new Error(errorMessage)
+      }
+      setBookshelfFormData({ name: '', description: '', short_description: '', long_description: '' })
       setShowCreateBookshelfModal(false)
       await loadBookshelves(selectedLibrary.id)
       // Reload all bookshelves for navigation pane
@@ -569,20 +616,32 @@ function AppContent() {
   }
 
   const handleDeleteBookshelf = async (id: number) => {
-    if (!window.confirm('Delete this bookshelf? This action cannot be undone.')) return
-    if (!selectedLibrary) return
     try {
-      const response = await fetch(`/api/bookshelves/${id}/`, { method: 'DELETE' })
-      if (!response.ok) throw new Error(`API error: ${response.status}`)
-      await loadBookshelves(selectedLibrary.id)
-      // Reload all bookshelves for navigation pane
-      const allBsResponse = await fetch('/api/bookshelves/')
-      if (allBsResponse.ok) {
-        const allBsData = await allBsResponse.json()
-        setAllBookshelves(allBsData)
+      // Fetch all books in this bookshelf (through all shelves)
+      const shelvesInBookshelf = allShelves.filter(s => s.bookshelf_id === id)
+      
+      // Fetch all books for each shelf
+      let bookshelfBooks: Book[] = []
+      for (const shelf of shelvesInBookshelf) {
+        const response = await fetch(`/api/books/?shelf_id=${shelf.id}`)
+        if (response.ok) {
+          const booksData = await response.json()
+          bookshelfBooks = [...bookshelfBooks, ...booksData]
+        }
       }
+      
+      const bookshelf = allBookshelves.find(bs => bs.id === id)
+      if (!bookshelf) return
+      
+      setDeleteModalData({
+        type: 'bookshelf',
+        id,
+        name: bookshelf.name,
+        books: bookshelfBooks
+      })
+      setShowDeleteModal(true)
     } catch (err) {
-      setError(`Failed to delete bookshelf: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setError(`Failed to prepare deletion: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
@@ -654,14 +713,82 @@ function AppContent() {
   }
 
   const handleDeleteShelf = async (id: number) => {
-    if (!window.confirm('Delete this shelf? Books on this shelf will need to be relocated.')) return
     try {
-      const response = await fetch(`/api/shelves/${id}/`, { method: 'DELETE' })
+      // Fetch all books in this shelf
+      const response = await fetch(`/api/books/?shelf_id=${id}`)
+      let shelfBooks: Book[] = []
+      if (response.ok) {
+        shelfBooks = await response.json()
+      }
+      
+      const shelf = shelves.find(s => s.id === id)
+      if (!shelf) return
+      
+      setDeleteModalData({
+        type: 'shelf',
+        id,
+        name: shelf.name,
+        books: shelfBooks
+      })
+      setShowDeleteModal(true)
+    } catch (err) {
+      setError(`Failed to prepare deletion: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    }
+  }
+
+  const handleDeleteConfirmation = async () => {
+    if (!deleteModalData) return
+    
+    try {
+      const { type, id } = deleteModalData
+      
+      if (deleteModalData.books.length > 0) {
+        // Move all books to storage first
+        const updatePayload = deleteModalData.books.map(book => ({
+          ...book,
+          status: 'storage',
+          shelf_id: null
+        }))
+        
+        for (const bookData of updatePayload) {
+          await fetch(`/api/books/${bookData.id}/`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: bookData.title,
+              author: bookData.author,
+              year: bookData.year,
+              status: 'storage',
+              shelf_id: null,
+              short_description: bookData.short_description,
+              long_description: bookData.long_description,
+              date_format: bookData.date_format
+            })
+          })
+        }
+      }
+      
+      // Now delete the container
+      const response = await fetch(`/api/${type === 'library' ? 'libraries' : type === 'bookshelf' ? 'bookshelves' : 'shelves'}/${id}/`, {
+        method: 'DELETE'
+      })
+      
       if (!response.ok) throw new Error(`API error: ${response.status}`)
-      if (selectedBookshelf) {
+      
+      // Reload affected data
+      if (type === 'library') {
+        setSelectedLibrary(null)
+        await loadLibraries()
+      } else if (type === 'bookshelf' && selectedLibrary) {
+        await loadBookshelves(selectedLibrary.id)
+        const allBsResponse = await fetch('/api/bookshelves/')
+        if (allBsResponse.ok) {
+          const allBsData = await allBsResponse.json()
+          setAllBookshelves(allBsData)
+        }
+      } else if (type === 'shelf' && selectedBookshelf) {
         // Reload and reindex remaining shelves
         const remainingShelves = shelves.filter((s: any) => s.id !== id)
-        // Reorder all remaining shelves
         const reorderPayload = remainingShelves.map((shelf: any, idx: number) => ({
           id: shelf.id,
           order: idx
@@ -673,17 +800,20 @@ function AppContent() {
             body: JSON.stringify(reorderPayload)
           })
         }
-        // Reload to get updated order values from backend
         await loadShelves(selectedBookshelf.id)
-        // Reload all shelves for navigation pane
         const allShResponse = await fetch('/api/shelves/')
         if (allShResponse.ok) {
           const allShData = await allShResponse.json()
           setAllShelves(allShData)
         }
+        await loadStorageBooks()
       }
+      
+      setShowDeleteModal(false)
+      setDeleteModalData(null)
+      setError(null)
     } catch (err) {
-      setError(`Failed to delete shelf: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      setError(`Failed to delete: ${err instanceof Error ? err.message : 'Unknown error'}`)
     }
   }
 
@@ -791,7 +921,8 @@ function AppContent() {
         author: bookFormData.author || undefined,
         year: yearValue || undefined,
         short_description: bookFormData.short_description || undefined,
-        long_description: bookFormData.long_description || undefined
+        long_description: bookFormData.long_description || undefined,
+        date_format: bookFormData.date_format
       }
       
       let response: Response
@@ -815,7 +946,7 @@ function AppContent() {
       if (!response.ok) throw new Error(`API error: ${response.status}`)
       
       // Reset form
-      setBookFormData({ title: '', author: '', year: '', short_description: '', long_description: '', targetShelf: '' })
+      setBookFormData({ title: '', author: '', year: '', short_description: '', long_description: '', targetShelf: '', date_format: 'date_month_year' })
       setPlacementType('storage')
       setSelectedLibraryForBook('')
       setSelectedBookshelfForBook('')
@@ -849,7 +980,8 @@ function AppContent() {
         short_description: bookFormData.short_description || undefined,
         long_description: bookFormData.long_description || undefined,
         shelf_id: editingBook.shelf_id || undefined,
-        status: editingBook.status || 'storage'
+        status: editingBook.status || 'storage',
+        date_format: bookFormData.date_format
       }
 
       const response = await fetch(`/api/books/${editingBook.id}/`, {
@@ -860,7 +992,7 @@ function AppContent() {
 
       if (!response.ok) throw new Error(`API error: ${response.status}`)
 
-      setBookFormData({ title: '', author: '', year: '', short_description: '', long_description: '', targetShelf: '' })
+      setBookFormData({ title: '', author: '', year: '', short_description: '', long_description: '', targetShelf: '', date_format: 'date_month_year' })
       setEditingBook(null)
       setShowCreateBookModal(false)
 
@@ -1021,7 +1153,7 @@ function AppContent() {
   }
 
   const handleDeleteUser = async (userId: number) => {
-    if (!window.confirm('Delete this user?')) return
+    if (!window.confirm(t('deleteUserConfirmation'))) return
     try {
       const response = await fetch(`/api/users/${userId}/`, { method: 'DELETE' })
       if (!response.ok) throw new Error(`API error: ${response.status}`)
@@ -1033,7 +1165,7 @@ function AppContent() {
   }
 
   const handleDeleteBook = async (bookId: number, shelfId: number | null) => {
-    if (!window.confirm('Delete this book?')) return
+    if (!window.confirm(t('deleteBookConfirmation'))) return
     try {
       const response = await fetch(`/api/books/${bookId}/`, { method: 'DELETE' })
       if (!response.ok) throw new Error(`API error: ${response.status}`)
@@ -1055,7 +1187,11 @@ function AppContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       })
-      if (!response.ok) throw new Error(`API error: ${response.status}`)
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || errorData.message || `API error: ${response.status}`
+        throw new Error(errorMessage)
+      }
       await loadAllBooks()
       await loadStorageBooks()
       if (selectedBookshelf) {
@@ -1063,6 +1199,7 @@ function AppContent() {
       }
     } catch (err) {
       setError(`Failed to move book: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      throw err
     }
   }
 
@@ -1247,7 +1384,6 @@ function AppContent() {
                 </button>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"><img src="/bookshelf.png" alt="Bookshelf" className="w-8 h-8" /> {selectedBookshelf.name}</h1>
-              <LanguageSwitcher />
             </div>
             {selectedBookshelf.description && (
               <p className="text-gray-600 mt-2 text-center">{selectedBookshelf.description}</p>
@@ -1372,7 +1508,7 @@ function AppContent() {
                             )}
                             {isExpanded && libraryBookshelves.length === 0 && (
                               <div className="ml-4 px-2 py-1 text-xs text-gray-500">
-                                No bookshelves
+                                {t('navNoBookshelves')}
                               </div>
                             )}
                           </div>
@@ -1395,7 +1531,7 @@ function AppContent() {
 
           <div className="mb-8">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">{t('shelves_count').replace('{count}', shelves.length.toString())}</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{t('shelfTitleWithCount').replace('{count}', shelves.length.toString())}</h2>
               <button
                 onClick={() => {
                   setEditingShelf(null)
@@ -1937,7 +2073,11 @@ function AppContent() {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify(requestBody)
                 })
-                if (!response.ok) throw new Error(`API error: ${response.status}`)
+                if (!response.ok) {
+                  const errorData = await response.json().catch(() => ({}))
+                  const errorMessage = errorData.error || errorData.message || `API error: ${response.status}`
+                  throw new Error(errorMessage)
+                }
                 await loadAllBooks()
                 await loadStorageBooks()
                 if (selectedBookshelf) {
@@ -1950,6 +2090,21 @@ function AppContent() {
                 throw err
               }
             }}
+          />
+        )}
+
+        {/* Delete Modal - For Bookshelf Detail View */}
+        {showDeleteModal && deleteModalData && (
+          <DeleteWithMoveBooksModal
+            isOpen={showDeleteModal}
+            containerType={deleteModalData.type}
+            containerName={deleteModalData.name}
+            books={deleteModalData.books}
+            onClose={() => {
+              setShowDeleteModal(false)
+              setDeleteModalData(null)
+            }}
+            onConfirm={handleDeleteConfirmation}
           />
         )}
       </div>
@@ -1987,7 +2142,6 @@ function AppContent() {
                 </button>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2 absolute left-1/2 transform -translate-x-1/2"><img src="/library.png" alt="Library" className="w-8 h-8" /> {selectedLibrary.name}</h1>
-              <LanguageSwitcher />
             </div>
             {selectedLibrary.description && (
               <p className="text-gray-600 mt-2 text-center">{selectedLibrary.description}</p>
@@ -2114,7 +2268,7 @@ function AppContent() {
                             )}
                             {isExpanded && libraryBookshelves.length === 0 && (
                               <div className="ml-4 px-2 py-1 text-xs text-gray-500">
-                                No bookshelves
+                                {t('navNoBookshelves')}
                               </div>
                             )}
                           </div>
@@ -2137,11 +2291,11 @@ function AppContent() {
               )}
 
               <div className="mb-6 flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-800">{t('bookshelves_count').replace('{count}', bookshelves.length.toString())}</h2>
+                <h2 className="text-2xl font-bold text-gray-800">{t('bookshelfTitleWithCount').replace('{count}', bookshelves.length.toString())}</h2>
             <button
               onClick={() => {
                 setEditingBookshelf(null)
-                setBookshelfFormData({ name: '', description: '' })
+                setBookshelfFormData({ name: '', description: '', short_description: '', long_description: '' })
                 setShowCreateBookshelfModal(true)
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2 transition"
@@ -2317,6 +2471,21 @@ function AppContent() {
             </div>
           </div>
         )}
+
+        {/* Delete Modal - For Library Detail View */}
+        {showDeleteModal && deleteModalData && (
+          <DeleteWithMoveBooksModal
+            isOpen={showDeleteModal}
+            containerType={deleteModalData.type}
+            containerName={deleteModalData.name}
+            books={deleteModalData.books}
+            onClose={() => {
+              setShowDeleteModal(false)
+              setDeleteModalData(null)
+            }}
+            onConfirm={handleDeleteConfirmation}
+          />
+        )}
       </div>
     )
   }
@@ -2459,7 +2628,7 @@ function AppContent() {
           updateUrl('dashboard')
         }}
         onAddBookClick={() => {
-          setBookFormData({ title: '', author: '', year: '', short_description: '', long_description: '' })
+          setBookFormData({ title: '', author: '', year: '', short_description: '', long_description: '', date_format: 'date_month_year' })
           setPlacementType('storage')
           setShowCreateBookModal(true)
         }}
@@ -2470,7 +2639,8 @@ function AppContent() {
             author: book.author || '',
             year: book.year ? String(book.year) : '',
             short_description: book.short_description || '',
-            long_description: book.long_description || ''
+            long_description: book.long_description || '',
+            date_format: (book as any).date_format || 'date_month_year'
           })
           setShowCreateBookModal(true)
         }}
@@ -2710,12 +2880,12 @@ function AppContent() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999]" onClick={() => setShowCreateUserModal(false)}>
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold">{editingUser ? 'Edit User' : 'Add New User'}</h2>
+              <h2 className="text-2xl font-bold">{editingUser ? (t('updateUser')) : t('createUser')}</h2>
               <button onClick={() => { setShowCreateUserModal(false); setEditingUser(null) }} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
             </div>
             <form onSubmit={editingUser ? handleUpdateUser : handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("username")} *</label>
                 <input
                   type="text"
                   required
@@ -2727,7 +2897,7 @@ function AppContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('gender')} *</label>
                 <select
                   required
                   value={userFormData.gender}
@@ -2735,14 +2905,14 @@ function AppContent() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">-- Select Gender --</option>
-                  <option value="M">Male</option>
-                  <option value="F">Female</option>
-                  <option value="O">Other</option>
+                  <option value="M">{t('male')}</option>
+                  <option value="F">{t('female')}</option>
+                  <option value="O">{t('other')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('department')}</label>
                 <input
                   type="text"
                   value={userFormData.department}
@@ -2753,7 +2923,7 @@ function AppContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('phoneNumber')}</label>
                 <input
                   type="tel"
                   value={userFormData.phone}
@@ -2764,7 +2934,7 @@ function AppContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('dateOfBirth')}</label>
                 <input
                   type="date"
                   value={userFormData.dob}
@@ -2774,7 +2944,7 @@ function AppContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('shortDescription')}</label>
                 <input
                   type="text"
                   value={userFormData.short_description}
@@ -2785,7 +2955,7 @@ function AppContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Long Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('longDescription')}</label>
                 <textarea
                   value={userFormData.long_description}
                   onChange={(e) => setUserFormData({ ...userFormData, long_description: e.target.value })}
@@ -2806,14 +2976,14 @@ function AppContent() {
                   }}
                   className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition disabled:opacity-50"
                 >
-                  {isSubmitting ? 'Saving...' : (editingUser ? 'Update User' : 'Create User')}
+                  {isSubmitting ? t('saving') : (editingUser ? t('updateUser') : t('createUser'))}
                 </button>
               </div>
             </form>
@@ -2856,19 +3026,112 @@ function AppContent() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('publicationDateLabel')}</label>
-                <input
-                  type="date"
-                  value={bookFormData.year || ''}
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('dateFormatLabel') || 'Date Format'}</label>
+                <select
+                  value={bookFormData.date_format}
                   onChange={(e) => {
-                    if (e.target.value) {
-                      setBookFormData({ ...bookFormData, year: e.target.value })
-                    } else {
-                      setBookFormData({ ...bookFormData, year: '' })
-                    }
+                    setBookFormData({ ...bookFormData, date_format: e.target.value, year: '' })
                   }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3"
+                >
+                  <option value="date_month_year">{t('bookTimeDateMonthYearOption')}</option>
+                  <option value="month_year">{t('bookTimeMonthYearOption')}</option>
+                  <option value="quarter_year">{t('bookTimeQuarterYearOption')}</option>
+                  <option value="year">{t('bookTimeYearOption')}</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('publicationDateLabel')}</label>
+                {bookFormData.date_format === 'date_month_year' && (
+                  <input
+                    type="date"
+                    value={bookFormData.year || ''}
+                    onChange={(e) => setBookFormData({ ...bookFormData, year: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Select a date"
+                  />
+                )}
+                {bookFormData.date_format === 'month_year' && (
+                  <input
+                    type="month"
+                    value={bookFormData.year ? bookFormData.year.substring(0, 7) : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        // month input returns YYYY-MM, but we need YYYY-MM-01
+                        setBookFormData({ ...bookFormData, year: e.target.value + '-01' })
+                      } else {
+                        setBookFormData({ ...bookFormData, year: '' })
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Select a month"
+                  />
+                )}
+                {bookFormData.date_format === 'quarter_year' && (
+                  <div className="flex gap-2">
+                    <select
+                      value={bookFormData.year ? (() => {
+                        const month = parseInt(bookFormData.year.substring(5, 7))
+                        if (month <= 3) return 'Q1'
+                        if (month <= 6) return 'Q2'
+                        if (month <= 9) return 'Q3'
+                        return 'Q4'
+                      })() : ''}
+                      onChange={(e) => {
+                        const year = bookFormData.year ? bookFormData.year.substring(0, 4) : new Date().getFullYear()
+                        if (e.target.value) {
+                          const quarter = e.target.value
+                          const monthMap: { [key: string]: string } = {
+                            'Q1': '01',
+                            'Q2': '04',
+                            'Q3': '07',
+                            'Q4': '10'
+                          }
+                          setBookFormData({ ...bookFormData, year: `${year}-${monthMap[quarter]}-01` })
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select Quarter</option>
+                      <option value="Q1">Q1 (Jan-Mar)</option>
+                      <option value="Q2">Q2 (Apr-Jun)</option>
+                      <option value="Q3">Q3 (Jul-Sep)</option>
+                      <option value="Q4">Q4 (Oct-Dec)</option>
+                    </select>
+                    <input
+                      type="number"
+                      min="1900"
+                      max="2099"
+                      value={bookFormData.year ? bookFormData.year.substring(0, 4) : new Date().getFullYear()}
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const month = bookFormData.year ? bookFormData.year.substring(5, 7) : '01'
+                          setBookFormData({ ...bookFormData, year: `${e.target.value}-${month}-01` })
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Year"
+                    />
+                  </div>
+                )}
+                {bookFormData.date_format === 'year' && (
+                  <input
+                    type="number"
+                    min="1900"
+                    max="2099"
+                    value={bookFormData.year ? bookFormData.year.substring(0, 4) : ''}
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setBookFormData({ ...bookFormData, year: `${e.target.value}-01-01` })
+                      } else {
+                        setBookFormData({ ...bookFormData, year: '' })
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter year (e.g., 2024)"
+                  />
+                )}
               </div>
               
               <div>
@@ -2992,7 +3255,7 @@ function AppContent() {
                   onClick={() => {
                     setShowCreateBookModal(false)
                     setEditingBook(null)
-                    setBookFormData({ title: '', author: '', year: '', short_description: '', long_description: '' })
+                    setBookFormData({ title: '', author: '', year: '', short_description: '', long_description: '', date_format: 'date_month_year' })
                     setPlacementType('storage')
                     setSelectedLibraryForBook('')
                     setSelectedBookshelfForBook('')
@@ -3071,7 +3334,11 @@ function AppContent() {
                 body: JSON.stringify(requestBody)
               })
               console.log('DEBUG: API Response status:', response.status)
-              if (!response.ok) throw new Error(`API error: ${response.status}`)
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}))
+                const errorMessage = errorData.error || errorData.message || `API error: ${response.status}`
+                throw new Error(errorMessage)
+              }
               await loadAllBooks()
               await loadStorageBooks()
               if (selectedBookshelf) {
@@ -3144,7 +3411,25 @@ function AppContent() {
             setShowMoveBookModal(false)
             setBookToMove(null)
           }}
-          onMove={handleMoveBook}
+          onMove={async (bookId, shelfId) => {
+            await handleMoveBook(bookId, shelfId)
+            setShowMoveBookModal(false)
+            setBookToMove(null)
+          }}
+        />
+      )}
+
+      {showDeleteModal && deleteModalData && (
+        <DeleteWithMoveBooksModal
+          isOpen={showDeleteModal}
+          containerType={deleteModalData.type}
+          containerName={deleteModalData.name}
+          books={deleteModalData.books}
+          onClose={() => {
+            setShowDeleteModal(false)
+            setDeleteModalData(null)
+          }}
+          onConfirm={handleDeleteConfirmation}
         />
       )}
     </>

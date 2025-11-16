@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import type { Book, Library, Bookshelf, Shelf } from '@/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface MoveBookModalProps {
   book: Book | null
@@ -18,6 +19,7 @@ export const MoveBookModal: React.FC<MoveBookModalProps> = ({
   onClose,
   onMove,
 }) => {
+  const { t } = useLanguage()
   const [selectedLibraryId, setSelectedLibraryId] = useState('')
   const [selectedBookshelfId, setSelectedBookshelfId] = useState('')
   const [selectedShelfId, setSelectedShelfId] = useState('')
@@ -44,7 +46,7 @@ export const MoveBookModal: React.FC<MoveBookModalProps> = ({
   const handleMove = async () => {
     if (!selectedShelfId) return
 
-    if (!window.confirm(`Are you sure you want to move "${book.title}" to the selected shelf?`)) return
+    if (!window.confirm(t('areYouSureMoveBook').replace('{title}', book.title))) return
 
     setIsLoading(true)
     setError(null)
@@ -54,8 +56,8 @@ export const MoveBookModal: React.FC<MoveBookModalProps> = ({
       setSelectedBookshelfId('')
       setSelectedShelfId('')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to move book')
-    } finally {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to move book'
+      setError(errorMessage)
       setIsLoading(false)
     }
   }
@@ -71,7 +73,7 @@ export const MoveBookModal: React.FC<MoveBookModalProps> = ({
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <img src="/shelf.png" alt="Shelf" className="w-6 h-6" /> Move to Shelf
+            <img src="/shelf.png" alt="Shelf" className="w-6 h-6" /> {t('moveToShelfTitle')}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
             ✕
@@ -92,7 +94,7 @@ export const MoveBookModal: React.FC<MoveBookModalProps> = ({
           {/* Library Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Library
+              {t('selectLibrary')}
             </label>
             <select
               value={selectedLibraryId}
@@ -104,7 +106,7 @@ export const MoveBookModal: React.FC<MoveBookModalProps> = ({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
               disabled={isLoading}
             >
-              <option value="">-- Choose a library --</option>
+              <option value="">{t('chooseALibrary')}</option>
               {libraries.map((library) => (
                 <option key={library.id} value={library.id.toString()}>
                   {library.name}
@@ -117,7 +119,7 @@ export const MoveBookModal: React.FC<MoveBookModalProps> = ({
           {selectedLibraryId && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Bookshelf
+                {t('selectBookshelf')}
               </label>
               <select
                 value={selectedBookshelfId}
@@ -128,7 +130,7 @@ export const MoveBookModal: React.FC<MoveBookModalProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 disabled={isLoading}
               >
-                <option value="">-- Choose a bookshelf --</option>
+                <option value="">{t('chooseABookshelf')}</option>
                 {filteredBookshelves.map((bookshelf) => (
                   <option key={bookshelf.id} value={bookshelf.id.toString()}>
                     {bookshelf.name}
@@ -142,7 +144,7 @@ export const MoveBookModal: React.FC<MoveBookModalProps> = ({
           {selectedBookshelfId && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Shelf
+                {t('selectShelf')}
               </label>
               <select
                 value={selectedShelfId}
@@ -150,7 +152,7 @@ export const MoveBookModal: React.FC<MoveBookModalProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                 disabled={isLoading}
               >
-                <option value="">-- Choose a shelf --</option>
+                <option value="">{t('chooseAShelf')}</option>
                 {filteredShelves.map((shelf) => (
                   <option key={shelf.id} value={shelf.id}>
                     #{shelf.order}{shelf.name ? `: ${shelf.name}` : ''}
@@ -167,14 +169,14 @@ export const MoveBookModal: React.FC<MoveBookModalProps> = ({
             disabled={isLoading}
             className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition disabled:opacity-50"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             onClick={handleMove}
             disabled={!selectedShelfId || isLoading}
             className="flex-1 px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition disabled:opacity-50"
           >
-            {isLoading ? 'Moving...' : 'Move Book'}
+            {isLoading ? t('moving') : t('moveBook')}
           </button>
         </div>
       </div>

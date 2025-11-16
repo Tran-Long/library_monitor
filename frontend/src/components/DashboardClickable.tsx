@@ -67,8 +67,8 @@ export default function DashboardClickable({
             </div>
             
             <div>
-              <p className="text-lg font-semibold text-gray-700 group-hover:text-white transition-colors mb-1">{libraryBooks.length} {t('manageBooks')}</p>
-              <p className="text-sm text-gray-500 group-hover:text-green-100 transition-colors">{t('browseManageCollections')}</p>
+              <p className="text-lg font-semibold text-gray-700 group-hover:text-white transition-colors mb-1">{t('dashboardManageLibraries')}</p>
+              <p className="text-sm text-gray-500 group-hover:text-green-100 transition-colors">{t('dashboardAllBooks')}: {libraryBooks.length}</p>
             </div>
           </div>
         </button>
@@ -85,15 +85,15 @@ export default function DashboardClickable({
           <div className="relative h-full p-8 flex flex-col justify-between group-hover:text-white transition-colors duration-300">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-semibold text-gray-500 group-hover:text-purple-100 transition-colors">{t('activeBorrowings')}</p>
+                <p className="text-sm font-semibold text-gray-500 group-hover:text-purple-100 transition-colors">{t('dashboardBorrowSession')}</p>
                 <h3 className="text-3xl font-bold text-gray-900 group-hover:text-white mt-1 transition-colors">{currentBorrowings.length}</h3>
               </div>
               <div className="text-4xl opacity-75 group-hover:opacity-100 transition-opacity">📚</div>
             </div>
             
             <div>
-              <p className="text-sm text-gray-500 group-hover:text-purple-100 transition-colors">{t('booksCurrentlyOut')}</p>
-              <p className="text-xs text-gray-400 group-hover:text-purple-100 transition-colors">{t('manageBorrowingSessions')}</p>
+              <p className="text-lg font-semibold text-gray-700 group-hover:text-white transition-colors mb-1">{t('dashboardManageBorrowings')}</p>
+              <p className="text-sm text-gray-500 group-hover:text-green-100 transition-colors">{t('dashboardManageBorrowingsDesc')}</p>
             </div>
           </div>
         </button>
@@ -117,8 +117,8 @@ export default function DashboardClickable({
                 </svg>
               </div>
             </div>
-            <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{t('manageBooks')}</h3>
-            <p className="text-sm text-gray-500 mt-1">{t('addEditRemoveBooks')}</p>
+            <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600 transition-colors">{t('dashboardManageBooks')}</h3>
+            <p className="text-sm text-gray-500 mt-1">{t('dashboardManageBooksDesc')}</p>
           </button>
 
           {/* Manage Users Card */}
@@ -134,8 +134,8 @@ export default function DashboardClickable({
                 </svg>
               </div>
             </div>
-            <h3 className="font-semibold text-gray-900 group-hover:text-cyan-600 transition-colors">{t('manageUsers')}</h3>
-            <p className="text-sm text-gray-500 mt-1">{t('createManageUsers')}</p>
+            <h3 className="font-semibold text-gray-900 group-hover:text-cyan-600 transition-colors">{t('dashboardManageUsers')}</h3>
+            <p className="text-sm text-gray-500 mt-1">{t('dashboardManageUsersDesc')}</p>
           </button>
         </div>
       </div>
@@ -144,15 +144,15 @@ export default function DashboardClickable({
       <div className="grid grid-cols-3 gap-4 pt-6 border-t border-gray-100">
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-900">{books.length}</p>
-          <p className="text-xs text-gray-500 mt-1">{t('totalBooks')}</p>
+          <p className="text-xs text-gray-500 mt-1">{t('dashboardTotalBooks')}</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-900">{libraries.length}</p>
-          <p className="text-xs text-gray-500 mt-1">{t('libraries')}</p>
+          <p className="text-xs text-gray-500 mt-1">{t('dashboardTotalLibraries')}</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-gray-900">{currentBorrowings.length}</p>
-          <p className="text-xs text-gray-500 mt-1">{t('outNow')}</p>
+          <p className="text-xs text-gray-500 mt-1">{t('dashboardTotalBorrowingCurrently')}</p>
         </div>
       </div>
     </div>

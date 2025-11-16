@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import type { Book, User } from '@/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 /**
  * Format a date string (YYYY-MM-DD) as dd/mm/yyyy
@@ -44,6 +45,7 @@ export const BorrowBookModal: React.FC<BorrowBookModalProps> = ({
   onUserSelected,
   useConfirmationFlow = false,
 }) => {
+  const { t } = useLanguage()
   const [selectedUserId, setSelectedUserId] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -88,7 +90,7 @@ export const BorrowBookModal: React.FC<BorrowBookModalProps> = ({
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-md p-6" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <img src="/borrow.png" alt="Borrow" className="w-6 h-6" /> Borrow Book
+            <img src="/borrow.png" alt="Borrow" className="w-6 h-6" /> {t('borrowBook')}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
             ✕
@@ -123,13 +125,13 @@ export const BorrowBookModal: React.FC<BorrowBookModalProps> = ({
         )}
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">Select User to Borrow</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">{t('selectUserToBorrow')}</label>
           <select
             value={selectedUserId}
             onChange={(e) => setSelectedUserId(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
           >
-            <option value="">-- Choose a user --</option>
+            <option value="">{t('chooseAUser')}</option>
             {users.map((user) => (
               <option key={user.id} value={user.id.toString()}>
                 {user.full_name} {user.phone ? `(${user.phone})` : ''}
@@ -144,7 +146,7 @@ export const BorrowBookModal: React.FC<BorrowBookModalProps> = ({
             disabled={isLoading}
             className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition disabled:opacity-50"
           >
-            Cancel
+            {t('cancel')}
           </button>
           {useConfirmationFlow ? (
             <button
@@ -152,7 +154,7 @@ export const BorrowBookModal: React.FC<BorrowBookModalProps> = ({
               disabled={!selectedUserId}
               className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition disabled:opacity-50"
             >
-              Next
+              {t('next')}
             </button>
           ) : (
             <button
@@ -160,7 +162,7 @@ export const BorrowBookModal: React.FC<BorrowBookModalProps> = ({
               disabled={!selectedUserId || isLoading}
               className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition disabled:opacity-50"
             >
-              {isLoading ? 'Borrowing...' : 'Borrow Book'}
+              {isLoading ? t('borrowingVerb') : t('borrowBookButton')}
             </button>
           )}
         </div>

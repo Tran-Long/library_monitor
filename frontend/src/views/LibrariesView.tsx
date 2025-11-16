@@ -219,12 +219,12 @@ export function LibrariesView({
         <main className="flex-1 overflow-y-auto px-4 py-8">
           <div className="max-w-7xl mx-auto">
             <div className="mb-6 flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-800">{t('libraries_count').replace('{count}', libraries.length.toString())}</h2>
+              <h2 className="text-2xl font-bold text-gray-800">{t('libraryTitleWithCount').replace('{count}', libraries.length.toString())}</h2>
               <button
                 onClick={onCreateLibraryClick}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium inline-flex items-center gap-2 transition"
               >
-                ➕ {t('addLibraryButton')}
+                ➕ {t('libraryAddLibraryButton')}
               </button>
             </div>
 
@@ -236,13 +236,7 @@ export function LibrariesView({
 
             {libraries.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
-                <p className="text-gray-500 mb-4">{t('noLibrariesYet')}</p>
-                <button
-                  onClick={onCreateLibraryClick}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium inline-flex items-center gap-2 transition"
-                >
-                  ➕ {t('createFirstLibrary')}
-                </button>
+                <p className="text-gray-500 mb-4">{t('libraryTextNoLibYet')}</p>
               </div>
             ) : (
               <DndContext
@@ -347,19 +341,19 @@ export function LibrariesView({
               <div>
                 <h3 className="font-semibold text-gray-700">{t('shortDescription')}</h3>
                 <p className="text-gray-600 mt-1">
-                  {detailPopup.type === 'library' && ((detailPopup.data as Library).short_description || '(None)')}
-                  {detailPopup.type === 'bookshelf' && ((detailPopup.data as Bookshelf).short_description || '(None)')}
-                  {detailPopup.type === 'shelf' && ((detailPopup.data as Shelf).short_description || '(None)')}
-                  {detailPopup.type === 'book' && ((detailPopup.data as Book).short_description || '(None)')}
+                  {detailPopup.type === 'library' && ((detailPopup.data as Library).short_description || '-')}
+                  {detailPopup.type === 'bookshelf' && ((detailPopup.data as Bookshelf).short_description || '-')}
+                  {detailPopup.type === 'shelf' && ((detailPopup.data as Shelf).short_description || '-')}
+                  {detailPopup.type === 'book' && ((detailPopup.data as Book).short_description || '-')}
                 </p>
               </div>
               <div>
                 <h3 className="font-semibold text-gray-700">{t('longDescription')}</h3>
                 <p className="text-gray-600 mt-1 whitespace-pre-wrap">
-                  {detailPopup.type === 'library' && ((detailPopup.data as Library).long_description || '(None)')}
-                  {detailPopup.type === 'bookshelf' && ((detailPopup.data as Bookshelf).long_description || '(None)')}
-                  {detailPopup.type === 'shelf' && ((detailPopup.data as Shelf).long_description || '(None)')}
-                  {detailPopup.type === 'book' && ((detailPopup.data as Book).long_description || '(None)')}
+                  {detailPopup.type === 'library' && ((detailPopup.data as Library).long_description || '-')}
+                  {detailPopup.type === 'bookshelf' && ((detailPopup.data as Bookshelf).long_description || '-')}
+                  {detailPopup.type === 'shelf' && ((detailPopup.data as Shelf).long_description || '-')}
+                  {detailPopup.type === 'book' && ((detailPopup.data as Book).long_description || '-')}
                 </p>
               </div>
             </div>

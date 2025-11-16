@@ -31,11 +31,6 @@ export const LibraryCard: React.FC<LibraryCardProps> = ({ library, onEdit, onDel
                   <span className="font-medium">Phone:</span> {library.phone}
                 </p>
               )}
-              {library.email && (
-                <p className="text-gray-700">
-                  <span className="font-medium">Email:</span> {library.email}
-                </p>
-              )}
             </div>
           </div>
         </div>

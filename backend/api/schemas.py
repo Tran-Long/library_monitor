@@ -95,6 +95,7 @@ class BookSchema(Schema):
     title: str
     author: str = ""
     year: Optional[date]
+    date_format: str = "date_month_year"
     short_description: str = ""
     long_description: str = ""
     status: str
@@ -111,6 +112,7 @@ class BookCreateSchema(Schema):
     title: str
     author: str = ""
     year: Optional[date] = None
+    date_format: str = "date_month_year"
     short_description: str = ""
     long_description: str = ""
     shelf_id: Optional[int] = None

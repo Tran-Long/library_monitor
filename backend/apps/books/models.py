@@ -13,10 +13,18 @@ class Book(models.Model):
         ('borrowed', 'Borrowed - User borrowed'),
     ]
     
+    DATE_FORMAT_CHOICES = [
+        ('date_month_year', 'Date Month Year'),
+        ('month_year', 'Month Year'),
+        ('quarter_year', 'Quarter Year'),
+        ('year', 'Year'),
+    ]
+    
     shelf = models.ForeignKey(Shelf, on_delete=models.CASCADE, related_name='books', null=True, blank=True, help_text="Shelf where book is stored")
     title = models.CharField(max_length=255, help_text="Book title (required)")
     author = models.CharField(max_length=255, blank=True, help_text="Book author")
     year = models.DateField(blank=True, null=True, help_text="Publication date")
+    date_format = models.CharField(max_length=20, choices=DATE_FORMAT_CHOICES, default='date_month_year', help_text="Date format for displaying publication date")
     short_description = models.CharField(max_length=255, blank=True, help_text="Brief description shown on cards")
     long_description = models.TextField(blank=True, help_text="Detailed description shown in detail view")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='storage', help_text="Book status/location")

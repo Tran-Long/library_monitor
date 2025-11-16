@@ -51,7 +51,7 @@ export const DraggableLibraryCard: React.FC<DraggableLibraryCardProps> = ({
 
         {/* Clickable Content Area */}
         <div className="flex-1 cursor-pointer" onClick={onSelect}>
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center gap-3 mb-4">
             <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full">
               📚 {bookCount}
             </span>
@@ -60,26 +60,30 @@ export const DraggableLibraryCard: React.FC<DraggableLibraryCardProps> = ({
               <h3 className="text-xl font-semibold text-gray-800">{library.name}</h3>
             </div>
           </div>
-          {library.short_description && (
-            <p className="text-gray-600 text-sm mt-1">{library.short_description}</p>
-          )}
-          <div className="mt-4 text-sm text-gray-600 grid grid-cols-1 md:grid-cols-3 gap-2">
+          
+          <div className="text-sm text-gray-600 grid grid-cols-2 gap-4 mb-4">
             {library.address && (
-              <p>
-                <strong>📍</strong> {library.address}
-              </p>
+              <div className="flex items-start gap-2">
+                <strong className="flex-shrink-0">📍</strong>
+                <span className="break-words">{library.address}</span>
+              </div>
             )}
             {library.phone && (
-              <p>
-                <strong>📞</strong> {library.phone}
-              </p>
+              <div className="flex items-start gap-2">
+                <strong className="flex-shrink-0">📞</strong>
+                <span className="break-words">{library.phone}</span>
+              </div>
             )}
-            {library.email && (
-              <p>
-                <strong>📧</strong> {library.email}
-              </p>
+            {!library.address && !library.phone && (
+              <div></div>
             )}
           </div>
+          
+          {library.short_description && (
+            <p className="text-sm text-gray-700 border-t border-gray-200 pt-2">
+              {library.short_description}
+            </p>
+          )}
         </div>
 
         {/* Info, Edit, and Delete Buttons */}

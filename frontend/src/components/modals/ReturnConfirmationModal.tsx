@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import type { Book, User, Borrowing } from '@/types'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 /**
  * Format a date string (YYYY-MM-DD) as dd/mm/yyyy
@@ -51,6 +52,7 @@ export const ReturnConfirmationModal: React.FC<ReturnConfirmationModalProps> = (
   onClose,
   onConfirm,
 }) => {
+  const { t } = useLanguage()
   const [returnDate, setReturnDate] = useState<Date>(new Date())
   const [returnNotes, setReturnNotes] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -90,7 +92,7 @@ export const ReturnConfirmationModal: React.FC<ReturnConfirmationModalProps> = (
     // Validate return date is after borrow date
     const borrowDateTime = new Date(borrowing.borrow_date)
     if (returnDate <= borrowDateTime) {
-      setError('Return date must be after the borrow date')
+      setError(t('returnDateMustBeAfter'))
       return
     }
     
@@ -114,7 +116,7 @@ export const ReturnConfirmationModal: React.FC<ReturnConfirmationModalProps> = (
       >
         <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <img src="/borrow.png" alt="Return Confirmation" className="w-6 h-6" /> Return Confirmation
+            <img src="/borrow.png" alt="Return Confirmation" className="w-6 h-6" /> {t('returnConfirmation')}
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">
             ✕
@@ -144,7 +146,7 @@ export const ReturnConfirmationModal: React.FC<ReturnConfirmationModalProps> = (
               <button
                 onClick={() => setShowBookDetails(!showBookDetails)}
                 className="p-2 hover:bg-blue-200 rounded-full transition flex-shrink-0"
-                title="View book details"
+                title={t('viewBookDetails')}
               >
                 ℹ️
               </button>
@@ -156,12 +158,12 @@ export const ReturnConfirmationModal: React.FC<ReturnConfirmationModalProps> = (
                 <div className="space-y-2 text-sm">
                   {book.short_description && (
                     <p>
-                      <span className="font-semibold text-gray-700">Description:</span> {book.short_description}
+                      <span className="font-semibold text-gray-700">{t('description')}:</span> {book.short_description}
                     </p>
                   )}
                   {book.status && (
                     <p>
-                      <span className="font-semibold text-gray-700">Current Status:</span>{' '}
+                      <span className="font-semibold text-gray-700">{t('currentStatus')}:</span>{' '}
                       <span className="capitalize">{book.status}</span>
                     </p>
                   )}
@@ -199,7 +201,7 @@ export const ReturnConfirmationModal: React.FC<ReturnConfirmationModalProps> = (
               <button
                 onClick={() => setShowUserDetails(!showUserDetails)}
                 className="p-2 hover:bg-green-200 rounded-full transition flex-shrink-0"
-                title="View more details"
+                title={t('viewMoreDetails')}
               >
                 ℹ️
               </button>
@@ -211,17 +213,17 @@ export const ReturnConfirmationModal: React.FC<ReturnConfirmationModalProps> = (
                 <div className="space-y-2 text-sm">
                   {user.dob && (
                     <p>
-                      <span className="font-semibold text-gray-700">Date of Birth:</span> {user.dob}
+                      <span className="font-semibold text-gray-700">{t('dateOfBirth')}:</span> {user.dob}
                     </p>
                   )}
                   {user.short_description && (
                     <p>
-                      <span className="font-semibold text-gray-700">Description:</span> {user.short_description}
+                      <span className="font-semibold text-gray-700">{t('description')}:</span> {user.short_description}
                     </p>
                   )}
                   {user.long_description && (
                     <p>
-                      <span className="font-semibold text-gray-700">Details:</span> {user.long_description}
+                      <span className="font-semibold text-gray-700">{t('details')}:</span> {user.long_description}
                     </p>
                   )}
                 </div>
@@ -232,7 +234,7 @@ export const ReturnConfirmationModal: React.FC<ReturnConfirmationModalProps> = (
           {/* Borrowed Information Group */}
           <div className="border border-purple-200 bg-purple-50 rounded-lg p-4">
             <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-              <img src="/borrow.png" alt="Borrow" className="w-6 h-6" /> Borrowed Information
+              <img src="/borrow.png" alt="Borrow" className="w-6 h-6" /> {t('borrowedInformation')}
             </h3>
             <div className="space-y-3">
               {/* Borrowed Date */}
@@ -257,7 +259,7 @@ export const ReturnConfirmationModal: React.FC<ReturnConfirmationModalProps> = (
           {/* Return Information Group */}
           <div className="border border-blue-200 bg-blue-50 rounded-lg p-4">
             <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
-              <img src="/return_book.png" alt="Return" className="w-6 h-6" /> Return Information
+              <img src="/return_book.png" alt="Return" className="w-6 h-6" /> {t('returnInformation')}
             </h3>
             <div className="space-y-3">
               {/* Return Date */}
@@ -285,12 +287,12 @@ export const ReturnConfirmationModal: React.FC<ReturnConfirmationModalProps> = (
               {/* Return Notes */}
               <div>
                 <p className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
-                  <img src="/note.png" alt="Notes" className="w-3 h-3" /> Notes (Optional)
+                  <img src="/note.png" alt="Notes" className="w-3 h-3" /> {t('notes')}
                 </p>
                 <textarea
                   value={returnNotes}
                   onChange={(e) => setReturnNotes(e.target.value)}
-                  placeholder="Add any notes about the return..."
+                  placeholder={t('addNotesPlaceholder')}
                   className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                   rows={3}
                   disabled={isLoading}
@@ -313,14 +315,14 @@ export const ReturnConfirmationModal: React.FC<ReturnConfirmationModalProps> = (
               disabled={isLoading}
               className="px-6 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition disabled:opacity-50"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               onClick={handleConfirm}
               disabled={isLoading}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition disabled:opacity-50"
             >
-              {isLoading ? 'Returning...' : 'Confirm & Return'}
+              {isLoading ? t('returning') : t('confirmAndReturn')}
             </button>
           </div>
         </div>

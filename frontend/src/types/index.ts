@@ -49,6 +49,7 @@ export interface Book {
   year: string | null  // ISO date string (YYYY-MM-DD)
   short_description: string
   long_description: string
+  date_format?: 'date_month_year' | 'month_year' | 'quarter_year' | 'year'
   status?: 'storage' | 'library' | 'borrowed'
   created_at: string
   updated_at: string

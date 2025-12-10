@@ -200,7 +200,21 @@ class UserCreateSchema(Schema):
     long_description: str = ""
 
 
+class DepartmentSchema(Schema):
+    """Schema for Department model."""
+    id: int
+    name: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class DepartmentCreateSchema(Schema):
+    """Schema for creating Department."""
+    name: str
+
+
 class ReorderSchema(Schema):
     """Schema for reordering items."""
     id: int
     order: int
+

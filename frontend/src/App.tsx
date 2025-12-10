@@ -61,6 +61,7 @@ function AppContent() {
   const [books, setBooks] = useState<Book[]>([])
   const [storageBooks, setStorageBooks] = useState<Book[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [departments, setDepartments] = useState<Array<{ id: number; name: string }>>([])
   const [shelfDetailPopup, setShelfDetailPopup] = useState<Shelf | null>(null)
   const [shelfColumnsView, setShelfColumnsView] = useState<1 | 2>(2)
   const [activeMainTab, setActiveMainTab] = useState<'dashboard' | 'libraries' | 'borrowed' | 'manage-books' | 'manage-users'>('dashboard')
@@ -168,6 +169,13 @@ function AppContent() {
     long_description: ''
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showNewDepartmentInput, setShowNewDepartmentInput] = useState(false)
+  const [newDepartmentName, setNewDepartmentName] = useState('')
+  const [creatingDepartment, setCreatingDepartment] = useState(false)
+  const [showNewAuthorDepartmentInput, setShowNewAuthorDepartmentInput] = useState(false)
+  const [newAuthorDepartmentName, setNewAuthorDepartmentName] = useState('')
+  const [creatingAuthorDepartment, setCreatingAuthorDepartment] = useState(false)
+  const [bookAuthorDepartmentForForm, setBookAuthorDepartmentForForm] = useState('')
 
   // Variable to hold the main content that will be rendered at the bottom
   let mainContent: React.ReactNode = null
@@ -329,6 +337,7 @@ function AppContent() {
       await loadLibraries()
       await loadAllBooks()
       await loadUsers()
+      await loadDepartments()
       await fetchBorrowings()
     }
     loadInitialData()
@@ -851,6 +860,40 @@ function AppContent() {
     } catch (err) {
       setError(`Failed to load users: ${err instanceof Error ? err.message : 'Unknown error'}`)
       console.error(err)
+    }
+  }
+
+  const loadDepartments = async () => {
+    try {
+      const response = await fetch('/api/departments/')
+      if (!response.ok) throw new Error(`API error: ${response.status}`)
+      const data = await response.json()
+      setDepartments(data)
+    } catch (err) {
+      setError(`Failed to load departments: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      console.error(err)
+    }
+  }
+
+  const handleCreateDepartment = async (name: string): Promise<{ id: number; name: string } | null> => {
+    try {
+      const response = await fetch('/api/departments/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name.trim() })
+      })
+      if (!response.ok) throw new Error(`API error: ${response.status}`)
+      const newDepartment = await response.json()
+      // Update departments list
+      setDepartments(prev => {
+        const exists = prev.some(d => d.id === newDepartment.id)
+        return exists ? prev : [...prev, newDepartment]
+      })
+      return newDepartment
+    } catch (err) {
+      setError(`Failed to create department: ${err instanceof Error ? err.message : 'Unknown error'}`)
+      console.error(err)
+      return null
     }
   }
 
@@ -2630,6 +2673,9 @@ function AppContent() {
         onAddBookClick={() => {
           setBookFormData({ title: '', author: '', year: '', short_description: '', long_description: '', date_format: 'date_month_year' })
           setPlacementType('storage')
+          setBookAuthorDepartmentForForm('')
+          setShowNewAuthorDepartmentInput(false)
+          setNewAuthorDepartmentName('')
           setShowCreateBookModal(true)
         }}
         onEditBook={(book) => {
@@ -2642,6 +2688,9 @@ function AppContent() {
             long_description: book.long_description || '',
             date_format: (book as any).date_format || 'date_month_year'
           })
+          setBookAuthorDepartmentForForm(book.author || '')
+          setShowNewAuthorDepartmentInput(false)
+          setNewAuthorDepartmentName('')
           setShowCreateBookModal(true)
         }}
         onDeleteBook={handleDeleteBook}
@@ -2885,7 +2934,7 @@ function AppContent() {
             </div>
             <form onSubmit={editingUser ? handleUpdateUser : handleCreateUser} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t("username")} *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t("fullName")} *</label>
                 <input
                   type="text"
                   required
@@ -2904,26 +2953,84 @@ function AppContent() {
                   onChange={(e) => setUserFormData({ ...userFormData, gender: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">-- Select Gender --</option>
-                  <option value="M">{t('male')}</option>
-                  <option value="F">{t('female')}</option>
-                  <option value="O">{t('other')}</option>
+                  <option value="">-- {t('selectGender')} --</option>
+                  <option value="M">{t('maleGender')}</option>
+                  <option value="F">{t('femaleGender')}</option>
+                  <option value="O">{t('otherGender')}</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('department')}</label>
-                <input
-                  type="text"
-                  value={userFormData.department}
-                  onChange={(e) => setUserFormData({ ...userFormData, department: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="E.g. Engineering, Marketing"
-                />
+                {!showNewDepartmentInput ? (
+                  <div className="space-y-2">
+                    <select
+                      value={userFormData.department}
+                      onChange={(e) => {
+                        if (e.target.value === '__new__') {
+                          setShowNewDepartmentInput(true)
+                        } else {
+                          setUserFormData({ ...userFormData, department: e.target.value })
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">-- {t('selectDepartment')} --</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.name}>
+                          {dept.name}
+                        </option>
+                      ))}
+                      <option value="__new__" className="italic font-semibold">+ {t('createNewDepartment')}</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={newDepartmentName}
+                      onChange={(e) => setNewDepartmentName(e.target.value)}
+                      placeholder={t('enterDepartmentName') || 'Enter department name'}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (newDepartmentName.trim()) {
+                            setCreatingDepartment(true)
+                            const newDept = await handleCreateDepartment(newDepartmentName)
+                            if (newDept) {
+                              setUserFormData({ ...userFormData, department: newDept.name })
+                              setNewDepartmentName('')
+                              setShowNewDepartmentInput(false)
+                            }
+                            setCreatingDepartment(false)
+                          }
+                        }}
+                        disabled={!newDepartmentName.trim() || creatingDepartment}
+                        className="flex-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium disabled:opacity-50 transition"
+                      >
+                        {creatingDepartment ? t('creating') || 'Creating...' : (t('create') || 'Create')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNewDepartmentInput(false)
+                          setNewDepartmentName('')
+                        }}
+                        className="flex-1 px-3 py-1 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded text-sm font-medium transition"
+                      >
+                        {t('cancel')}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('phoneNumber')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('phone')}</label>
                 <input
                   type="tel"
                   value={userFormData.phone}
@@ -2950,7 +3057,7 @@ function AppContent() {
                   value={userFormData.short_description}
                   onChange={(e) => setUserFormData({ ...userFormData, short_description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Brief description"
+                  placeholder={t('briefDescriptionPlaceholder')}
                 />
               </div>
 
@@ -2960,7 +3067,7 @@ function AppContent() {
                   value={userFormData.long_description}
                   onChange={(e) => setUserFormData({ ...userFormData, long_description: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Detailed description"
+                  placeholder={t('detailedDescriptionPlaceholder')}
                   rows={4}
                 />
               </div>
@@ -2997,7 +3104,13 @@ function AppContent() {
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
             <div className="flex justify-between items-center p-6 border-b border-gray-200 flex-shrink-0">
               <h2 className="text-2xl font-bold">{editingBook ? t('editBookTitle') : t('addNewBookTitle')}</h2>
-              <button onClick={() => { setShowCreateBookModal(false); setEditingBook(null) }} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
+              <button onClick={() => { 
+                setShowCreateBookModal(false)
+                setEditingBook(null)
+                setBookAuthorDepartmentForForm('')
+                setShowNewAuthorDepartmentInput(false)
+                setNewAuthorDepartmentName('')
+              }} className="text-gray-500 hover:text-gray-700 text-2xl">✕</button>
             </div>
             
             <form onSubmit={editingBook ? handleUpdateBook : handleCreateBook} className="space-y-4 overflow-y-auto flex-1 p-6">
@@ -3016,13 +3129,73 @@ function AppContent() {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">{t('author')}</label>
-                <input
-                  type="text"
-                  value={bookFormData.author}
-                  onChange={(e) => setBookFormData({ ...bookFormData, author: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder={t('authorPlaceholder')}
-                />
+                {!showNewAuthorDepartmentInput ? (
+                  <div className="space-y-2">
+                    <select
+                      value={bookAuthorDepartmentForForm}
+                      onChange={(e) => {
+                        if (e.target.value === '__new__') {
+                          setShowNewAuthorDepartmentInput(true)
+                        } else {
+                          setBookAuthorDepartmentForForm(e.target.value)
+                          setBookFormData({ ...bookFormData, author: e.target.value })
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">-- {t('selectAuthor') || 'Select Author/Department'} --</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={dept.name}>
+                          {dept.name}
+                        </option>
+                      ))}
+                      <option value="__new__" className="italic font-semibold">+ {t('createNewAuthorDepartment') || 'Create New Author/Department'}</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      value={newAuthorDepartmentName}
+                      onChange={(e) => setNewAuthorDepartmentName(e.target.value)}
+                      placeholder={t('enterAuthorDepartmentName') || 'Enter author/department name'}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (newAuthorDepartmentName.trim()) {
+                            setCreatingAuthorDepartment(true)
+                            const newDept = await handleCreateDepartment(newAuthorDepartmentName)
+                            if (newDept) {
+                              setBookAuthorDepartmentForForm(newDept.name)
+                              setBookFormData({ ...bookFormData, author: newDept.name })
+                              setNewAuthorDepartmentName('')
+                              setShowNewAuthorDepartmentInput(false)
+                            }
+                            setCreatingAuthorDepartment(false)
+                          }
+                        }}
+                        disabled={!newAuthorDepartmentName.trim() || creatingAuthorDepartment}
+                        className="flex-1 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium disabled:opacity-50 transition"
+                      >
+                        {creatingAuthorDepartment ? t('creating') || 'Creating...' : (t('create') || 'Create')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowNewAuthorDepartmentInput(false)
+                          setNewAuthorDepartmentName('')
+                        }}
+                        className="flex-1 px-3 py-1 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded text-sm font-medium transition"
+                      >
+                        {t('cancel')}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div>
@@ -3190,7 +3363,7 @@ function AppContent() {
               {!editingBook && placementType === 'shelf' && (
                 <div className="space-y-3 bg-gray-50 p-3 rounded">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('libraries')} *</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('library')} *</label>
                     <select
                       value={selectedLibraryForBook}
                       onChange={(e) => {
@@ -3209,7 +3382,7 @@ function AppContent() {
                   
                   {selectedLibraryForBook && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('bookshelfName')} *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('bookshelf')} *</label>
                       <select
                         value={selectedBookshelfForBook}
                         onChange={(e) => {
@@ -3230,7 +3403,7 @@ function AppContent() {
                   
                   {selectedBookshelfForBook && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('shelfName')} *</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">{t('shelf')} *</label>
                       <select
                         value={selectedShelfIdForBook}
                         onChange={(e) => setSelectedShelfIdForBook(e.target.value)}
@@ -3260,6 +3433,9 @@ function AppContent() {
                     setSelectedLibraryForBook('')
                     setSelectedBookshelfForBook('')
                     setSelectedShelfIdForBook('')
+                    setBookAuthorDepartmentForForm('')
+                    setShowNewAuthorDepartmentInput(false)
+                    setNewAuthorDepartmentName('')
                   }}
                   className="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg font-medium transition"
                 >

@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react'
-import translations from '../locales/translations.json'
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react'
 
 type Language = 'en' | 'vi'
 
@@ -11,26 +10,93 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
+// Parse CSV data into a translations object
+const parseTranslationsCsv = (csvText: string): Record<Language, Record<string, string>> => {
+  const lines = csvText.trim().split('\n')
+  
+  const translations: Record<Language, Record<string, string>> = {
+    en: {},
+    vi: {}
+  }
+
+  for (let i = 1; i < lines.length; i++) {
+    // Handle commas within quoted fields
+    const row: string[] = []
+    let currentField = ''
+    let insideQuotes = false
+
+    for (let j = 0; j < lines[i].length; j++) {
+      const char = lines[i][j]
+
+      if (char === '"') {
+        insideQuotes = !insideQuotes
+      } else if (char === ',' && !insideQuotes) {
+        row.push(currentField.trim())
+        currentField = ''
+      } else {
+        currentField += char
+      }
+    }
+    row.push(currentField.trim())
+
+    if (row.length >= 3) {
+      const key = row[0]
+      const enValue = row[1]
+      const viValue = row[2]
+      
+      if (key) {
+        translations.en[key] = enValue
+        translations.vi[key] = viValue
+      }
+    }
+  }
+
+  return translations
+}
+
+let translationsCache: Record<Language, Record<string, string>> | null = null
+
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    // Initialize from localStorage if available, otherwise default to 'en'
     const saved = localStorage.getItem('appLanguage')
     return (saved as Language) || 'en'
   })
 
-  const t = (key: string): string => {
-    const keys = key.split('.')
-    let value: any = translations[language]
-    
-    for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
-        value = value[k]
-      } else {
-        return key // Return the key if translation not found
-      }
+  const [translations, setTranslations] = useState<Record<Language, Record<string, string>> | null>(null)
+
+  useEffect(() => {
+    // Load and parse CSV file
+    if (translationsCache) {
+      setTranslations(translationsCache)
+      return
     }
-    
-    return typeof value === 'string' ? value : key
+
+    fetch('/locales/translations.csv')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to fetch translations: ${response.status}`)
+        }
+        return response.text()
+      })
+      .then(csvText => {
+        const parsed = parseTranslationsCsv(csvText)
+        translationsCache = parsed
+        setTranslations(parsed)
+      })
+      .catch(error => {
+        console.error('Failed to load translations CSV:', error)
+        // Fallback to empty translations
+        setTranslations({ en: {}, vi: {} })
+      })
+  }, [])
+
+  const t = (key: string): string => {
+    if (!translations) {
+      return key
+    }
+
+    const value = translations[language][key]
+    return value || key
   }
 
   const setLanguage = (lang: Language) => {

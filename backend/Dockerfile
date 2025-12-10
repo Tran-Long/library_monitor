@@ -6,10 +6,11 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
-RUN apt-get update && apt-get install -y \
+RUN apt update && apt install -y \
     postgresql-client \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    && apt clean && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt

@@ -3,6 +3,7 @@ import type { Book, User, Borrowing } from '@/types'
 import { useBorrowings } from '@/hooks'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { BookDetailModal, UserDetailModal } from '@/components/modals'
+import { CustomDatePicker } from '@/components/CustomDatePicker'
 
 interface BorrowedViewProps {
   books: Book[]
@@ -85,13 +86,13 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
   const formatDateTime = (dateString: string | null | undefined) => {
     if (!dateString) return '-'
     try {
-      return new Date(dateString).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      const date = new Date(dateString)
+      const day = String(date.getDate()).padStart(2, '0')
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const year = date.getFullYear()
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      return `${day}/${month}/${year} ${hours}:${minutes}`
     } catch {
       return '-'
     }
@@ -108,6 +109,55 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
     } catch {
       return '-'
     }
+  }
+
+  const formatDateAsddmmyyyy = (dateString: string | null | undefined) => {
+    if (!dateString) return ''
+    try {
+      const date = new Date(dateString)
+      const day = String(date.getDate()).padStart(2, '0')
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const year = date.getFullYear()
+      return `${day}/${month}/${year}`
+    } catch {
+      return ''
+    }
+  }
+
+  // Handle borrow date from change with validation
+  const handleBorrowDateFromChange = (value: string) => {
+    if (borrowDateTo && value > borrowDateTo) {
+      // If from date is after to date, don't allow it
+      return
+    }
+    setBorrowDateFrom(value)
+  }
+
+  // Handle borrow date to change with validation
+  const handleBorrowDateToChange = (value: string) => {
+    if (borrowDateFrom && value < borrowDateFrom) {
+      // If to date is before from date, don't allow it
+      return
+    }
+    setBorrowDateTo(value)
+  }
+
+  // Handle return date from change with validation
+  const handleReturnDateFromChange = (value: string) => {
+    if (returnDateTo && value > returnDateTo) {
+      // If from date is after to date, don't allow it
+      return
+    }
+    setReturnDateFrom(value)
+  }
+
+  // Handle return date to change with validation
+  const handleReturnDateToChange = (value: string) => {
+    if (returnDateFrom && value < returnDateFrom) {
+      // If to date is before from date, don't allow it
+      return
+    }
+    setReturnDateTo(value)
   }
   
   // Filter borrowings based on all criteria
@@ -376,21 +426,23 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                       <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-3 min-w-48">
                         <div className="space-y-2">
                           <div>
-                            <label className="text-xs font-medium text-gray-700">{t('from')}</label>
-                            <input
-                              type="date"
+                            <label className="text-xs font-medium text-gray-700 mb-1 block">{t('from')}</label>
+                            <CustomDatePicker
                               value={borrowDateFrom}
-                              onChange={(e) => setBorrowDateFrom(e.target.value)}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              onChange={handleBorrowDateFromChange}
+                              disabledAfter={borrowDateTo}
+                              closePickerOnSelect={true}
+                              className="text-xs"
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-medium text-gray-700">{t('to')}</label>
-                            <input
-                              type="date"
+                            <label className="text-xs font-medium text-gray-700 mb-1 block">{t('to')}</label>
+                            <CustomDatePicker
                               value={borrowDateTo}
-                              onChange={(e) => setBorrowDateTo(e.target.value)}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              onChange={handleBorrowDateToChange}
+                              disabledBefore={borrowDateFrom}
+                              closePickerOnSelect={true}
+                              className="text-xs"
                             />
                           </div>
                         </div>
@@ -412,21 +464,23 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                       <div data-dropdown-content className="absolute left-0 top-full mt-1 bg-white border border-gray-300 rounded shadow-lg z-10 p-3 min-w-48">
                         <div className="space-y-2">
                           <div>
-                            <label className="text-xs font-medium text-gray-700">{t('from')}</label>
-                            <input
-                              type="date"
+                            <label className="text-xs font-medium text-gray-700 mb-1 block">{t('from')}</label>
+                            <CustomDatePicker
                               value={returnDateFrom}
-                              onChange={(e) => setReturnDateFrom(e.target.value)}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              onChange={handleReturnDateFromChange}
+                              disabledAfter={returnDateTo}
+                              closePickerOnSelect={true}
+                              className="text-xs"
                             />
                           </div>
                           <div>
-                            <label className="text-xs font-medium text-gray-700">{t('to')}</label>
-                            <input
-                              type="date"
+                            <label className="text-xs font-medium text-gray-700 mb-1 block">{t('to')}</label>
+                            <CustomDatePicker
                               value={returnDateTo}
-                              onChange={(e) => setReturnDateTo(e.target.value)}
-                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                              onChange={handleReturnDateToChange}
+                              disabledBefore={returnDateFrom}
+                              closePickerOnSelect={true}
+                              className="text-xs"
                             />
                           </div>
                         </div>
@@ -555,7 +609,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                   {(borrowDateFrom || borrowDateTo) && (
                     <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
                       <img src="/borrow.png" alt="Borrow Date" className="w-4 h-4" />
-                      <span>{borrowDateFrom && new Date(borrowDateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {borrowDateTo && new Date(borrowDateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      <span>{borrowDateFrom && formatDateAsddmmyyyy(borrowDateFrom)} - {borrowDateTo && formatDateAsddmmyyyy(borrowDateTo)}</span>
                       <button
                         onClick={() => {
                           setBorrowDateFrom('')
@@ -570,7 +624,7 @@ export const BorrowedView: React.FC<BorrowedViewProps> = ({
                   {(returnDateFrom || returnDateTo) && (
                     <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
                       <img src="/return_book.png" alt="Return Date" className="w-4 h-4" />
-                      <span>{returnDateFrom && new Date(returnDateFrom).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {returnDateTo && new Date(returnDateTo).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                      <span>{returnDateFrom && formatDateAsddmmyyyy(returnDateFrom)} - {returnDateTo && formatDateAsddmmyyyy(returnDateTo)}</span>
                       <button
                         onClick={() => {
                           setReturnDateFrom('')

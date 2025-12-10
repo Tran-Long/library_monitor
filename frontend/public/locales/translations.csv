@@ -1,0 +1,293 @@
+key,en,vi
+manageBooksFilterNone,No Date Filter,Tất cả
+manageBooksFilterDate,Date,Ngày
+manageBooksFilterMonth,Month,Tháng
+manageBooksFilterQuarter,Quarter,Quý
+manageBooksFilterYear,Year,Năm
+bookTimeDateMonthYearOption,Date Month Year (DD/MM/YYYY),Ngày
+bookTimeMonthYearOption,Month Year (MM/YYYY),Tháng
+bookTimeQuarterYearOption,Quarter Year (Q/YYYY),Quý
+bookTimeYearOption,Year (YYYY),Năm
+books,books,Chứng Từ
+dashboard,Dashboard,Bảng điều khiển
+manageBooksTitle,Manage Books,Quản lý Chứng Từ
+manageBooksFilterStatus,Status,Trạng thái
+manageBooksFilterTime,Time,Thời gian
+manageBooksStatusBorrowing,Borrowed Books,Đang mượn
+manageBooksStatusStorage,In Storage,Trong kho Lưu Trữ
+manageBooksStatusLibrary,In Library,Trong kho Chứng Từ
+dashboardTotalLibraries,Libraries,Kho Chứng Từ
+dashboardManageLibraries,Manage Libraries,Quản lý Kho Chứng Từ
+dashboardManageBooks,Manage Books,Quản lý chứng từ
+dashboardManageUsers,Manage Users,Quản lý người mượn
+navNoBookshelves,No bookshelves,Không có Giá Chứng Từ
+library,Library,Kho Chứng Từ
+bookshelf,Bookshelf,Giá Chứng Từ
+shelf,Shelf,Ngăn
+allLibraries,All Libraries,Tất cả kho Chứng Từ
+addLibrary,Add Library,Thêm kho Chứng Từ
+addBookshelf,Add Bookshelf,Thêm giá Chứng Từ
+addShelf,Add Shelf,Thêm ngăn
+addBook,Add Book,Thêm Chứng Từ
+addUser,Add User,Thêm người dùng
+bookName,Book Name,Tên Chứng Từ
+author,Author,Phòng
+selectAuthor,Select Author,Chọn Phòng ban
+createNewAuthorDepartment,Create New Author,Tạo phòng ban mới
+isbn,ISBN,ISBN
+quantity,Quantity,Số lượng
+search,Search,Tìm kiếm
+delete,Delete,Xóa
+edit,Edit,Chỉnh sửa
+save,Save,Lưu
+cancel,Cancel,Hủy
+confirm,Confirm,Xác nhận
+close,Close,Đóng
+borrow,Borrow,Mượn
+return,Return,Trả
+borrowBook,Borrow Book,Mượn Chứng Từ
+returnBook,Return Book,Trả Chứng Từ
+userName,User Name,Tên người dùng
+email,Email,Email
+phone,Phone,Điện thoại
+address,Address,Địa chỉ
+borrowedBooks,Borrowed Books,Chứng Từ đã mượn
+returnedBooks,Returned Books,Chứng Từ đã trả
+shelfName,Shelf Name,Tên ngăn
+bookshelfName,Bookshelf Name,Tên giá Chứng Từ
+libraryName,Library Name,Tên kho Chứng Từ
+toggleNavPane,Toggle Navigation,Bật/tắt điều hướng
+hideNavPane,Hide Navigation,Ẩn điều hướng
+showNavPane,Show Navigation,Hiển thị điều hướng
+resetView,Reset View,Đặt lại chế độ xem
+loading,Loading...,Đang tải...
+error,Error,Lỗi
+success,Success,Thành công
+noData,No data available,Không có dữ liệu
+selectLibrary,Select a library,Chọn một kho Chứng Từ
+selectBookshelf,Select a bookshelf,Chọn một giá Chứng Từ
+selectShelf,Select a shelf,Chọn một ngăn
+moveBook,Move Book,Di chuyển Chứng Từ
+fromShelf,From Shelf,Từ ngăn
+toShelf,To Shelf,Tới ngăn
+moveSuccess,Book moved successfully,Chứng Từ đã được di chuyển thành công
+borrowSuccess,Book borrowed successfully,Mượn Chứng Từ thành công
+returnSuccess,Book returned successfully,Trả Chứng Từ thành công
+deleteSuccess,Deleted successfully,Xóa thành công
+createdSuccess,Created successfully,Tạo thành công
+updatedSuccess,Updated successfully,Cập nhật thành công
+failedToLoad,Failed to load data,Không thể tải dữ liệu
+failedToCreate,Failed to create,Không thể tạo
+failedToDelete,Failed to delete,Không thể xóa
+failedToUpdate,Failed to update,Không thể cập nhật
+confirmation,Are you sure?,Bạn có chắc không?
+deleteConfirmation,Are you sure you want to delete this?,Bạn có chắc chắn muốn xóa điều này không?
+language,Language,Ngôn ngữ
+english,English,English
+vietnamese,Tiếng Việt,Tiếng Việt
+goBackToDashboard,Go back to dashboard,Quay lại bảng điều khiển
+libraryMonitor,Library Monitor,Quản lý Kho Chứng Từ
+toggleNavigation,Toggle Navigation,Bật/tắt điều hướng
+hideNavigation,Hide Navigation,Ẩn điều hướng
+showNavigation,Show Navigation,Hiển thị điều hướng
+resetVi,Reset View,Đặt lại
+noLibrariesSelected,No libraries selected,Không có kho Chứng Từ nào được chọn
+yourLibraries,Your Libraries,Kho chứng từ
+dashboardBorrowSession,Active Borrowings,Chứng Từ đang mượn
+dashboardManageBorrowings,Manage Borrowings,Quản lý mượn Chứng Từ
+dashboardManageBorrowingsDesc,Manage borrowing sessions,Quản lý phiên mượn hiện tại và lịch sử
+managementTools,Management Tools,Công cụ quản lý
+manageLibraryBooks,Manage your library collection efficiently,Quản lý bộ sưu tập kho Chứng Từ của bạn một cách hiệu quả
+dashboardManageBooksDesc,"Add, edit, or remove books from your library","Thêm, chỉnh sửa hoặc xóa chứng từ khỏi kho"
+dashboardManageUsersDesc,Create and manage user accounts and permissions,Tạo và quản lý tài khoản người mượn
+dashboardTotalBooks,Total Books,Tổng số Chứng Từ
+dashboardTotalBorrowingCurrently,Out Now,Mượn hiện tại
+dashboardAllBooks,Total books across the entire libraries,Số lượng Chứng Từ trong toàn bộ kho chứng từ
+noLibraries,No libraries,Không có kho Chứng Từ
+libraryAddLibraryButton,Add Library,Thêm Kho Chứng Từ
+libraryTextNoLibYet,No libraries yet. Create one to get started!,Chưa có kho Chứng Từ nào. Tạo một kho Chứng Từ để bắt đầu!
+libraryDetails,Library Details,Chi tiết kho Chứng Từ
+bookshelfDetails,Bookshelf Details,Chi tiết giá Chứng Từ
+shelfDetails,Shelf Details,Chi tiết ngăn
+bookDetails,Book Details,Chi tiết Chứng Từ
+name,Name,Tên
+shortDescription,Short Description,Ghi chú ngắn
+longDescription,Long Description,Ghi chú chi tiết
+noShelves,No shelves,Không có ngăn
+noBookshelves,No bookshelves,Không có giá Chứng Từ
+libraryTitleWithCount,Libraries ({count}),Kho Chứng Từ ({count})
+toggleDropdown,Toggle dropdown,Bật/tắt menu
+noBooks,No books in storage,Không có Chứng Từ trong kho
+storage,Storage,Kho
+viewDetails,View details,Xem chi tiết
+lendBook,Lend book,Cho mượn Chứng Từ
+moveToShelf,Move to shelf,Di chuyển vào ngăn
+searchForNotes,Search for notes (borrow/return)...,Tìm kiếm ghi chú (mượn/trả)...
+loadingBorrowingData,Loading borrowing data...,Đang tải dữ liệu mượn...
+noBorrowingHistory,No borrowing history,Không có lịch sử mượn
+statusFilter,Status,Trạng thái
+userFilter,User,Người dùng
+bookFilter,Book,Chứng Từ
+borrowDateFilter,Borrow Date,Ngày mượn
+returnDateFilter,Return Date,Ngày trả
+all,All,Tất cả
+allUsers,All Users,Tất cả người dùng
+allBooks,All Books,Tất cả Chứng Từ
+borrowing,Borrowing,Đang mượn
+returned,Returned,Đã trả
+from,From,Từ
+to,To,Đến
+sortByBorrowDateLatest,"Sort by borrow date, latest first",Sắp xếp theo ngày mượn, mới nhất trước
+sortByBorrowDateOldest,"Sort by borrow date, earliest first",Sắp xếp theo ngày mượn, cũ nhất trước
+sortByReturnDateLatest,"Sort by return date, latest first",Sắp xếp theo ngày trả, mới nhất trước
+sortByReturnDateOldest,"Sort by return date, earliest first",Sắp xếp theo ngày trả, cũ nhất trước
+borrowStatusTable,Status,Trạng thái
+bookColumn,Book,Chứng Từ
+userColumn,User,Người dùng
+borrowDateColumn,Borrow Date,Ngày mượn
+returnDateColumn,Return Date,Ngày trả
+borrowNoteColumn,Borrow Note,Ghi chú mượn
+returnNoteColumn,Return Note,Ghi chú trả
+actionColumn,Action,Hành động
+unknownBook,Unknown Book,Chứng Từ không xác định
+unknown,Unknown,Không xác định
+viewBookDetails,View book details,Xem chi tiết Chứng Từ
+viewUserDetails,View user details,Xem chi tiết người dùng
+returnBookButton,Return,Trả
+noShelvesYet,No shelves yet. Create one to get started!,Chưa có ngăn nào. Tạo một ngăn để bắt đầu!
+shelfTitleWithCount,Shelves ({count}),Ngăn ({count})
+noBookshelvesYet,No bookshelves yet. Create one to get started!,Chưa có giá Chứng Từ nào. Tạo một giá Chứng Từ để bắt đầu!
+bookshelfTitleWithCount,Bookshelves ({count}),Giá ({count})
+editLibrary,Edit Library,Chỉnh sửa kho Chứng Từ
+addNewLibrary,Add New Library,Thêm kho Chứng Từ mới
+libraryNameLabel,Library Name,Tên kho Chứng Từ
+shortDescriptionLabel,Short Description,Ghi chú ngắn
+longDescriptionLabel,Long Description,Ghi chú chi tiết
+addressLabel,Address,Địa chỉ
+phoneLabel,Phone,Điện thoại
+emailLabel,Email,Email
+libraryNamePlaceholder,Library name,Tên kho Chứng Từ
+briefDescriptionPlaceholder,Brief description,Ghi chú ngắn
+detailedDescriptionPlaceholder,Detailed description,Mô tả chi tiết
+libraryAddressPlaceholder,Library address,Địa chỉ kho Chứng Từ
+phoneNumberPlaceholder,Phone number,Số điện thoại
+emailAddressPlaceholder,Email address,Địa chỉ email
+saving,Saving...,Đang lưu...
+create,Create,Tạo
+creating,Creating...,Đang tạo...
+department,Department,Phòng ban
+selectDepartment,Select Department,Chọn Phòng ban
+createNewDepartment,Create New Department,Tạo phòng ban mới
+enterDepartmentName,Enter department name,Nhập tên phòng ban
+createLibrary,Create Library,Tạo kho Chứng Từ
+updateLibrary,Update Library,Cập nhật kho Chứng Từ
+editBookshelf,Edit Bookshelf,Chỉnh sửa giá Chứng Từ
+createNewBookshelf,Create New Bookshelf,Tạo giá Chứng Từ mới
+bookshelfNameLabel,Bookshelf Name,Tên giá Chứng Từ
+fictionSectionPlaceholder,e.g., Fiction Section,ví dụ: Kệ Văn học
+briefDescriptionOnCardPlaceholder,Brief description (shown on card),Ghi chú ngắn (hiển thị trên thẻ)
+detailedDescriptionPopupPlaceholder,Detailed description (shown in detail popup),Mô tả chi tiết (hiển thị trong cửa sổ chi tiết)
+addNewShelf,Add New Shelf,Thêm ngăn mới
+shelfNameLabel,Shelf Name,Tên ngăn
+shelfNamePlaceholder,e.g., Shelf A (optional),ví dụ: ngăn A (tùy chọn)
+briefDescriptionForCardPlaceholder,Brief description for the card,Ghi chú ngắn cho thẻ
+detailedDescriptionDetailViewPlaceholder,Detailed description (shown in detail view),Mô tả chi tiết (hiển thị trong chế độ xem chi tiết)
+adding,Adding...,Đang thêm...
+addShelfButton,Add Shelf,Thêm ngăn
+addNewBook,Add New Book,Thêm Chứng Từ mới
+addFirstBook,Add First Book,Thêm Chứng Từ đầu tiên
+searchBooksPlaceholder,"Search books by title, author, year...","Tìm kiếm Chứng Từ theo tiêu đề, Phòng, năm..."
+bookCount,{count} of {total} books,{count} trong số {total} Chứng Từ
+failedToLoadBooks,Failed to load books. The backend server might be unavailable.,Không thể tải Chứng Từ. Máy chủ backend có thể không khả dụng.
+checkConnectionRetry,Please check your connection and try again.,Vui lòng kiểm tra kết nối của bạn và thử lại.
+retryLoadingBooks,Retry Loading Books,Thử tải lại Chứng Từ
+noBooksYet,No books yet. Add one to get started!,Chưa có Chứng Từ nào. Thêm một Chứng Từ để bắt đầu!
+noMatchingBooks,No books match your search or filter criteria.,Không có Chứng Từ nào phù hợp với tiêu chí tìm kiếm hoặc lọc của bạn.
+sortByNameAZ,Sort by name A-Z,Sắp xếp theo tên A-Z
+sortByNameZA,Sort by name Z-A,Sắp xếp theo tên Z-A
+newestFirst,Newest first,Mới nhất trước
+oldestFirst,Oldest first,Cũ nhất trước
+allLibrariesFilter,All Libraries,Tất cả kho Chứng Từ
+allBookshelvesFilter,All Bookshelves,Tất cả giá Chứng Từ
+allShelvesFilter,All Shelves,Tất cả ngăn
+allUsersFilter,All Users,Tất cả người dùng
+borrowedByLabel,Borrowed by:,Mượn bởi:
+noUserInformation,No user information,Không có thông tin người dùng
+moveToStorage,Move to storage,Di chuyển vào kho lưu trữ
+returnToStorage,Return book to storage,Trả Chứng Từ vào kho lưu trữ
+areYouSureMoveBook,Are you sure you want to move "{title}" to storage?,Bạn có chắc chắn muốn di chuyển "{title}" vào kho lưu trữ không?
+areYouSureReturnBook,Are you sure you want to return "{title}" to storage?,Bạn có chắc chắn muốn trả "{title}" vào kho lưu trữ không?
+columnLayout,column layout,bố cục cột
+editBookTitle,Edit Book,Chỉnh sửa Chứng Từ
+addNewBookTitle,Add New Book,Thêm Chứng Từ mới
+bookTitleLabel,Title,Tiêu đề
+bookTitlePlaceholder,Book title,Tiêu đề Chứng Từ
+authorLabel,Author,Phòng
+authorPlaceholder,Author name,Tên Phòng
+publicationDateLabel,Publication Date,Thời gian
+dateFormatLabel,Date Format,Loại thời gian
+longDescriptionLabel,Long Description,Ghi chú chi tiết
+placementStorage,Storage,Kho lưu trữ
+placementShelf,Library Shelf,Ngăn/Giá/Kho Chứng Từ
+selectLibraryOption,-- Select a library --,-- Chọn một kho Chứng Từ --
+selectBookshelfOption,-- Select a bookshelf --,-- Chọn một giá Chứng Từ --
+selectShelfOption,-- Select a shelf --,-- Chọn một ngăn --
+updateBook,Update Book,Cập nhật Chứng Từ
+createBook,Create Book,Tạo Chứng Từ
+manageUsersTitle,Manage Users,Quản lý người dùng
+addNewUser,Add New User,Thêm người dùng mới
+failedToLoadUsers,Failed to load users. The backend server might be unavailable.,Không thể tải người dùng. Máy chủ backend có thể không khả dụng.
+retryLoadingUsers,Retry Loading Users,Thử tải lại người dùng
+noUsersYet,No users yet. Click "Add New User" button to create one.,Chưa có người dùng nào. Nhấp vào nút "Thêm người dùng mới" để tạo một người dùng.
+searchUsersPlaceholder,"Search users by name, phone, short desc, long desc...","Tìm kiếm người dùng theo tên, điện thoại, Ghi chú ngắn, Ghi chú chi tiết..."
+allDepartments,All Departments,Tất cả phòng ban
+usersCount,{count} of {total} users,{count} trong số {total} người dùng
+noMatchingUsers,No users match your search or filter criteria.,Không có người dùng nào phù hợp với tiêu chí tìm kiếm hoặc lọc của bạn.
+booksBorrowedByUser,📚 Books Borrowed by {name},📚 Chứng Từ mượn bởi {name}
+noBorrowedBooks,No borrowed books,Không có Chứng Từ mượn
+gender,Gender,Giới tính
+selectGender,Select Gender,Chọn Giới tính
+maleGender,♂️ Male,♂️ Nam
+femaleGender,♀️ Female,♀️ Nữ
+otherGender,⚪ Other,⚪ Khác
+departmentLabel,Department,Phòng ban
+tryLoadingDataAgain,Try to load data again,Thử tải dữ liệu lại
+deleteWarning,Attention: Deletion cannot be undone,Chú ý: Xóa không thể hoàn tác
+chooseAction,What would you like to do with the books?,Bạn muốn làm gì với những cuốn Chứng Từ này?
+moveAndDelete,Move & Delete,Di chuyển & Xóa
+deleteAll,Delete Everything,Xóa tất cả
+deleting,Deleting...,Đang xóa...
+createUser,Create User,Thêm người dùng mới
+updateUser,Update User,Cập nhật người dùng
+borrowConfirmation,Borrow Confirmation,Xác nhận Mượn
+borrowInformation,Borrow Information,Thông tin Mượn
+dateAndTime,Date & Time,Ngày & Giờ
+notes,Notes (Optional),Ghi chú (Tùy chọn)
+addNotesPlaceholder,Add any notes about this borrowing session...,Thêm ghi chú về phiên mượn này...
+confirmAndLend,Confirm & Lend,Xác nhận & Cho mượn
+lending,Lending...,Đang cho mượn...
+viewMoreDetails,View more details,Xem thêm chi tiết
+dateOfBirth,Date of Birth,Ngày tháng năm sinh
+description,Description,Mô tả
+details,Details,Chi tiết
+currentStatus,Current Status,Trạng thái hiện tại
+returnConfirmation,Return Confirmation,Xác nhận Trả
+borrowedInformation,Borrowed Information,Thông tin Mượn
+returnInformation,Return Information,Thông tin Trả
+confirmAndReturn,Confirm & Return,Xác nhận & Trả
+returning,Returning...,Đang trả...
+returnDateMustBeAfter,Return date must be after the borrow date,Ngày trả phải sau ngày mượn
+userDetails,User Details,Chi tiết Người dùng
+fullName,Full Name,Họ và tên
+selectUserToBorrow,Select User to Borrow,Chọn Người dùng để Mượn
+chooseAUser,-- Choose a user --,-- Chọn một người dùng --
+next,Next,Tiếp theo
+borrowBookButton,Borrow Book,Cho Mượn Chứng Từ
+borrowingVerb,Borrowing...,Đang cho mượn...
+moveToShelfTitle,Move to Shelf,Di chuyển vào Ngăn
+chooseALibrary,-- Choose a library --,-- Chọn một kho Chứng Từ --
+chooseABookshelf,-- Choose a bookshelf --,-- Chọn một giá Chứng Từ --
+chooseAShelf,-- Choose a shelf --,-- Chọn một ngăn --
+moveBookTitle,Move Book,Di chuyển Chứng Từ
+moving,Moving...,Đang di chuyển...
+wherePlaceBook, Place the book at:, Nơi để đặt Chứng Từ:

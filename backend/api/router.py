@@ -9,7 +9,7 @@ from apps.bookshelves.models import Bookshelf
 from apps.shelves.models import Shelf
 from apps.books.models import Book
 from apps.borrowings.models import Borrowing
-from apps.users.models import User
+from apps.users.models import User, Department
 
 from .schemas import (
     LibrarySchema, LibraryCreateSchema,
@@ -18,6 +18,7 @@ from .schemas import (
     BookSchema, BookCreateSchema, BookMoveSchema,
     BorrowingSchema, BorrowingCreateSchema, BorrowBookSchema,
     UserSchema, UserCreateSchema,
+    DepartmentSchema, DepartmentCreateSchema,
     ReorderSchema,
 )
 
@@ -458,7 +459,33 @@ def delete_user(request, user_id: int):
     return {"message": "User deleted successfully"}
 
 
+# ============= DEPARTMENT ENDPOINTS =============
+
+@router.get("/departments/", response=List[DepartmentSchema])
+def list_departments(request):
+    """List all departments."""
+    return Department.objects.all()
+
+
+@router.post("/departments/", response=DepartmentSchema)
+def create_department(request, payload: DepartmentCreateSchema):
+    """Create a new department."""
+    # Check if department already exists (case-insensitive)
+    existing = Department.objects.filter(name__iexact=payload.name).first()
+    if existing:
+        return existing
+    department = Department.objects.create(**payload.dict())
+    return department
+
+
+@router.get("/departments/{department_id}/", response=DepartmentSchema)
+def get_department(request, department_id: int):
+    """Get a specific department."""
+    return get_object_or_404(Department, id=department_id)
+
+
 # ============= BORROWING ENDPOINTS =============
+
 
 @router.get("/borrowings/", response=List[BorrowingSchema])
 def list_borrowings(request, user_id: int = Query(None), is_returned: bool = Query(None)):
